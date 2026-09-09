@@ -1,0 +1,370 @@
+{
+  "schemaVersion": "1.0",
+  "project": "CAPT-Bot",
+  "sourceRepository": "knowurknottty/CAPT_core",
+  "baseCommit": "3be3fd6cc1274f7a7935d35b83641fc5b9dc82e8",
+  "sourceCommit": "c93200626b621bf7a27c1fa6cfcbf04773121c35",
+  "layout": "added project files plus exact shared-core seam patch",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "7c03269a4e49265f332477c8c0ef53542e88644b677aadd7d29ddd3d4e9d1249"
+    },
+    {
+      "path": "capt_runtime/aggregates/bot.py",
+      "sha256": "f433b913a8bb77029bbee0b9dff89c8d98f3d5f41ffcf670e2cda526d58fcfc9"
+    },
+    {
+      "path": "capt_runtime/aggregates/cloudflare_resource_binding.py",
+      "sha256": "d1ef0c0243fa5970130586f5247c21edd38fa0b96810b18685bb98cd1629b13a"
+    },
+    {
+      "path": "capt_runtime/aggregates/cognitive_candidate.py",
+      "sha256": "6579196755a7d658376693a801a9bb08c90b7325ad7fdb05bbdc2fdc8c5d27d6"
+    },
+    {
+      "path": "capt_runtime/aggregates/delegate_assignment.py",
+      "sha256": "8a7c1ceb73503a8bdf2f2657fc33a7250a6c5792d8ef6073bb075f029fa85cac"
+    },
+    {
+      "path": "capt_runtime/aggregates/lab_board.py",
+      "sha256": "a29999ea350d5afedbcddd719773770efca940a8060922883f6179879d5a1f0e"
+    },
+    {
+      "path": "capt_runtime/aggregates/sandbox_lease.py",
+      "sha256": "f8a9b6deaa8bd519413458e2ee9e1f405d6b766882ba7c1d69047f7bec984265"
+    },
+    {
+      "path": "capt_runtime/aggregates/skill_candidate.py",
+      "sha256": "834bc09540ad388324752a7394df8e41f22cba515fcc742f82c04ee4d88b1e6d"
+    },
+    {
+      "path": "capt_runtime/bot_locality.py",
+      "sha256": "7ec6dfa24f44c3a229eab2a47e62c8400a08d239fe6a6091da002d60cabff41e"
+    },
+    {
+      "path": "capt_runtime/cloudflare_resource_adoption.py",
+      "sha256": "f005c4790f3cf3b2b0fbc75686bc784bbdfee4724f3e97ebb7a069993861e1ba"
+    },
+    {
+      "path": "capt_runtime/lab_standup.py",
+      "sha256": "8c17d0f797e40ceb153034c532581b0c8a929f8385b823497b1887c2c22d9b99"
+    },
+    {
+      "path": "capt_runtime/sandbox_reconciliation.py",
+      "sha256": "7436e86d75946b2d68af02ee9b4c354959c50842630b307e21eb5393b45656b3"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/cloudflare_terminal.py",
+      "sha256": "6ca61dab51a76f5fe9ab5273ccac07351874cc142d05be107f03e51f1eb0d9f1"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/inversion_sandbox_lifecycle.py",
+      "sha256": "2ce4a69859f58f7c4fe9a777d1062977bda1240ed4c833d270e9c95a3242ff75"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/inversion_sandbox_terminal.py",
+      "sha256": "dc9eefb5bef853addbad80b0adbe7abf0a9ba175c43089b44fb369c7d3019b3f"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare.py",
+      "sha256": "20e3d1d1199939eec994cf26dc7b2603168c0d2588594a240daf0845ad6aab39"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_ai_catalog.py",
+      "sha256": "4c4f7e33515c161c55b27bbcb74a480f759021aea67bfd7699aebf7b8ba090af"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_artifacts.py",
+      "sha256": "fdff09306d7082112f66645ad12d11e97870598a2f9b9b2c76144e505fb5a469"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_planner.py",
+      "sha256": "198f5c70fe59395af792f5228d4c7354ba3c364e3522cd5c90237e80ac62453a"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_router.py",
+      "sha256": "0878eb140377dbb5e41192a7e2913a17a0e7094efa9bdf9fa871e01c18b98d60"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_tier.py",
+      "sha256": "3a269ee67f3ebb5d1cc7cca0463cf281a9f7cbf1d890874d9ab213f8b050744f"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_native.py",
+      "sha256": "8b7e54a23407c09ef1cd6bfce76a1df90e98bfea4d48bea7e4fdc8cef676677b"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_native_api.py",
+      "sha256": "c97dec74ecfb18a7c6885b14ebb9b32fce263bb68b01ff62d0368b7e5287f241"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_resource_inventory.py",
+      "sha256": "0c2e599effa0a0c176d5f85c192bf75be2d2ee0462bd67cd597f064420a3f48b"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_usage.py",
+      "sha256": "b295ca358f1beeed86cc83c3f9479b4c798e94e4d507beb3cc0fd660aabef707"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_workflows.py",
+      "sha256": "f5606daf3e61bb6df34b35302ada1b3adfb3f45bc3496ad21e5272565011eb9d"
+    },
+    {
+      "path": "capt_runtime/tools/backends/inversion_guardian.py",
+      "sha256": "d5ef3a598736ffc2bb8053e2880a79cf1fdff1b7eaa723e625744f8a049df78f"
+    },
+    {
+      "path": "capt_runtime/tools/backends/inversion_sandbox.py",
+      "sha256": "ea1a92af1948b665a5e74d0fa9854045fadf245f5786f17c6364607fa688966b"
+    },
+    {
+      "path": "capt_runtime/tools/sandbox_broker_hooks.py",
+      "sha256": "8bedae4155579d8a619839aded4a147bea39f0c3662676a15475af395d07cdbd"
+    },
+    {
+      "path": "contracts/fixtures/sandbox.json",
+      "sha256": "68411c28a9d730c9ecc27ae42766dc502299ba4c57e35e2d6ffc9382ee76d106"
+    },
+    {
+      "path": "contracts/schema/bot.schema.json",
+      "sha256": "26e2e481f20d50a61080fb21de86f534399132bf4a1815b51594f47c3bd019ef"
+    },
+    {
+      "path": "contracts/schema/sandbox.schema.json",
+      "sha256": "a81349b125e4823365cca2a7bf887b0db889df0cc2fe0353172dc7aff1a21eea"
+    },
+    {
+      "path": "docs/architecture/CAPT_BOT_CLOUDFLARE_R3.md",
+      "sha256": "1f1c426245180f239f7f5c02ca1d44e0a479a7d1423fb71848ac3e5656818aec"
+    },
+    {
+      "path": "docs/architecture/CAPT_BOT_CLOUDFLARE_WORKFLOWS_R4.md",
+      "sha256": "2cf968c299442fb6b7bcfcda485f5a4f1fc27782e8485789aca4ab40cb88c72d"
+    },
+    {
+      "path": "docs/architecture/CAPT_BOT_CREW_STANDUP_R2.md",
+      "sha256": "5dd66f33e61f80eea5e2c60a163284daa27666f32cd7ae1dc11ec91640be1833"
+    },
+    {
+      "path": "docs/architecture/CAPT_BOT_FOUNDATION_R1.md",
+      "sha256": "4ffb4a0f20f21fa895eff45b10978d29db05921f9242b6f8e16e8fb17b7581f1"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-08-capt-bot-crew-standup-r2.md",
+      "sha256": "3adef70c760ab2da0fd9cbe4cb1efca2ae60c211e6d0835800b86ce29154e9e0"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-08-capt-bot-foundation-r1.md",
+      "sha256": "543a91ba2ed522e9ba1355153f8c26fc7ab8354b7bb1f0ea168250055accd2e5"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-09-capt-cloudflare-workflows-r4.md",
+      "sha256": "87c72de0a30bbc3a1bed2ee925d17aea9526bfc0312c15687c87d1a1cb45398a"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-09-inversion-sandbox-r1.md",
+      "sha256": "c494132d8bd9b1a312ab0160939089e4756773a41200eb6de1257a83fa53959b"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-09-inversion-sandbox-r2-persistent-leases.md",
+      "sha256": "63de210a7be0add8f23c97bb319d29621bf5f8bef6809dce9bb8ce27326a66e6"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-09-inversion-sandbox-r1-design.md",
+      "sha256": "90cfef7952e8c555bbba1ab22aa8c0b61e56d95f8d5797afbe908b6353741d56"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-09-inversion-sandbox-r2-persistent-leases-design.md",
+      "sha256": "6360983b51eb275e95d0aadef5c2538fb3d80e303f0c0516852f6a7dc2e21517"
+    },
+    {
+      "path": "docs/superpowers/verification/2026-09-09-inversion-sandbox-r1.md",
+      "sha256": "66cb79db6472661917cc63b4adf37e0f945b28126c4ab8e150c000c9738219ec"
+    },
+    {
+      "path": "docs/superpowers/verification/2026-09-09-inversion-sandbox-r2.md",
+      "sha256": "713ec2e4cf257fa6bb7241579e7b52ef2904c21aac777bd4e08c99f3f8b9b902"
+    },
+    {
+      "path": "integration/BASE_COMMIT",
+      "sha256": "7140739705e878e2c983eecc11fa184c0c15be0ea759296529059d68b3bf2eb2"
+    },
+    {
+      "path": "integration/CAPT_CORE.patch",
+      "sha256": "e708ae7b1e2b01518dd7996105d3a25cb3ef6a97ea268838d53a3ea31131db47"
+    },
+    {
+      "path": "integration/SOURCE_COMMIT",
+      "sha256": "55e10dfd6291eca53a999b518da9bc3579173daad42dd4fdeeeb11feb5e196dd"
+    },
+    {
+      "path": "integration/added-paths.txt",
+      "sha256": "eb072c4a7d0e905d0846a046127ac74d9fa50e4d3a304df9cd803f648460d217"
+    },
+    {
+      "path": "integration/shared-modified-paths.txt",
+      "sha256": "162d482f8619a6e1bdfbbd674e146f2127790a345e381d496eba5734726a7bd8"
+    },
+    {
+      "path": "tests/capt_runtime/test_bot_foundation_aggregates.py",
+      "sha256": "cec24e00b237b84f3526638196c9205ac317bc97a60fa8dbfbbcca83939c7665"
+    },
+    {
+      "path": "tests/capt_runtime/test_bot_foundation_contracts.py",
+      "sha256": "b7c42eb25bf8b961e2186302412c5a0d2e932c433a50ca4b534d4026993a161c"
+    },
+    {
+      "path": "tests/capt_runtime/test_bot_foundation_service.py",
+      "sha256": "850c990400bb77f96b97100f10e79454941253711f18ee3549c81bf62c232506"
+    },
+    {
+      "path": "tests/capt_runtime/test_bot_locality.py",
+      "sha256": "1fd6e6ceb6abf01a0494ad306c0e49b7bdb28be4d28f1546f96b1d1b938f61dd"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_ai_catalog.py",
+      "sha256": "5078efab5574874dd970a111225e3a070b412493c526407845716566dcb3faa3"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_ai_catalog_admission.py",
+      "sha256": "945ec031f346137c6c31881cfc40c751370ce8fb9c62e9f5a3a4e220051e2ccc"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_browser_binary_artifacts.py",
+      "sha256": "44ae41279fa9e0f75c8c7c2ddd78237065c47de6302a2e61af2473f257aff7c8"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_cost_policy.py",
+      "sha256": "1b6dec5b29cc5d13eedb32ed361d2fa3c090df0aae0b0295161fb98eb9497760"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_free_planner.py",
+      "sha256": "82bca874cc6d950a01c6ecff87cc66e95905e3bec717ee59be71d2d3778d0d26"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_free_router.py",
+      "sha256": "ec99d4be46af74d8ddae75e77c881da2a35899552721e9c7c49235c8fd9cab02"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_free_tier_envelope.py",
+      "sha256": "7f1e537a635b63a7ec0295049392eb630b00be9acd29f8416e570ee8db60c33d"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_native_api_bridge.py",
+      "sha256": "18eda67bb3b901c60a6483e4d067f7da0c39478b4106410b04f085a7758397b1"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_native_binding_enforcement.py",
+      "sha256": "c42c6bd8da16f4ca2aff6407ae33707cfd460c867a3dce4e0dad9a23705ff2ee"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_native_composition.py",
+      "sha256": "214f9f40945b9c0dce1ee9054b56478c53d7986ba41128cd4c165762643cb165"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_native_state_browser_ai.py",
+      "sha256": "dff1026b72e876dd2a5130564e003a0ea84a3f407d8f206f0d19b67aea5049e5"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_native_workers_queue.py",
+      "sha256": "91212a9ec8c2c2dc5f8414818f052ba2e1ebc09ed29b7407fa16bf966f31a19d"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_profile_resource_binding.py",
+      "sha256": "35dec678214da82eae91035bacfc2ec178f16bdf5d9504dfea8fda11a958d724"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_resource_adoption.py",
+      "sha256": "aeec394fa6d8ba5fc3b43a54b5186e598ea5be1f51ac311bfdc9a4f8872cb5bf"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_resource_inventory.py",
+      "sha256": "ba12d5fb46acf4e492c910c4cb90591eabd388927ec9b269fde2fee4aa7e3a9b"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_tool_backend.py",
+      "sha256": "d7043c1ab9cf095c4116b77ec7d20c1c730d3bcbdd16ad7c237f2ebfc0d492fd"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_usage_ledger.py",
+      "sha256": "6208d7252a9ca58c274a1b41b46339fc6c2083bcb9babddafefe8434de9ef81b"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_workflow_inventory.py",
+      "sha256": "1a5ce3e872a778e5a7265ea3a646dba39d03795a60b9aaf80f0b51f0904e6016"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_workflows_api.py",
+      "sha256": "ef567a03279590c3f2309ba3024431d4a5545faace1cb48da9e20c474ee3ea5a"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_workflows_budget.py",
+      "sha256": "366cd00a166894daedacf4dc872ea8315b7111281448bdc511730f5fb23e86b9"
+    },
+    {
+      "path": "tests/capt_runtime/test_cloudflare_workflows_orchestrator.py",
+      "sha256": "d498bf1a62db6a664a971d43fac456b7422705f36a29327962e0ad2412f590d1"
+    },
+    {
+      "path": "tests/capt_runtime/test_delegate_assignment_aggregate.py",
+      "sha256": "7fcbb8cb04bae1f0a28fb4e71d7555aed82765e0b2a908bf21212227dd037a27"
+    },
+    {
+      "path": "tests/capt_runtime/test_delegate_assignment_contracts.py",
+      "sha256": "79f385ff14cd6f87539956cb5e38724f197a7485bd12dd510209f29a495d4a3a"
+    },
+    {
+      "path": "tests/capt_runtime/test_delegate_assignment_service.py",
+      "sha256": "9a311a5c02133b5c253b673856b96c653207da880942e58b50e57c7c5c021878"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_lifecycle_tool.py",
+      "sha256": "0b024a2913a84ce5457e1da4ddbe3e0c7a2fb601b369918fe72733c6ac7710b9"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_network.py",
+      "sha256": "2f06521bc7d82cd0c36781fccb3822899924aeb9862be2f90deca9c86e567af4"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_persistence_backend.py",
+      "sha256": "2fba463bef5b7bdc0ec9e58295878153cd8a8ae4b2c5ef197eeca9d706f2d86c"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_persistent_exec.py",
+      "sha256": "dd192ae303003ac6e95f9ea2dd6d7c211654885840a0529f632e9a8a6a0cae37"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_persistent_real_docker.py",
+      "sha256": "126db9b13d819151a524fc7a99f5e38231b23eed24a2032d62df2ffefebe78d9"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_real_docker.py",
+      "sha256": "1d96b13e7edb8a8e2bb36d3a6abbf1d64acd6abf27d277b51284ccbf5db059b7"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_reconciliation.py",
+      "sha256": "463d21482c6779f5c9f7ce4afa01b5eb4840c2ca84f38e10f8a06d1bee033a37"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_runtime.py",
+      "sha256": "5a61b6eebe54a80f433820f4cea384cc811373673759211bd12631816017da00"
+    },
+    {
+      "path": "tests/capt_runtime/test_inversion_sandbox_security.py",
+      "sha256": "a43d2ecd6713f4ea027ed85529cdcb246b2a79e657a439eed43ccb76c33faf1a"
+    },
+    {
+      "path": "tests/capt_runtime/test_lab_standup.py",
+      "sha256": "bdfda541faba35f2f8122929d09246ddc9208a7927fa86fc2d46cea872f1ffb2"
+    },
+    {
+      "path": "tests/capt_runtime/test_sandbox_lease_aggregate.py",
+      "sha256": "cf8a8784c5c77932dd3c786f4773860b0840914cd560fe55efa642b4729eee09"
+    },
+    {
+      "path": "tests/capt_runtime/test_sandbox_lease_service.py",
+      "sha256": "41e0e010632300b6450656ac9058106fff9d3ac2767d5f69bd3a912a562d15e0"
+    }
+  ]
+}
