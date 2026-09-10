@@ -378,8 +378,8 @@
     },
     {
       "path": "tests/capt_runtime/test_cloudflare_workflows_orchestrator.py",
-      "sha256": "d498bf1a62db6a664a971d43fac456b7422705f36a29327962e0ad2412f590d1",
-      "origin": "source"
+      "sha256": "7088ff343a8a704e1f033a9807d1d6bcb37a68984eb2a9d0462227e2e98b976c",
+      "origin": "component_fix"
     },
     {
       "path": "tests/capt_runtime/test_delegate_assignment_aggregate.py",

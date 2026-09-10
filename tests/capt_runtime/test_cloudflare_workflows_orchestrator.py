@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -24,7 +24,7 @@ INSTANCE_ID = "capt_" + "5" * 64
 def planner(tmp_path):
     router = CloudflareFreeTierRouter.default()
     ledger = CloudflareUsageLedger(tmp_path / "usage.sqlite", router=router)
-    return CloudflareFreeExecutionPlanner(ledger, router), ledger
+    return CloudflareFreeExecutionPlanner(ledger, router, now=lambda: datetime(2026, 9, 9, 12, 0, tzinfo=timezone.utc)), ledger
 
 
 class Bridge:

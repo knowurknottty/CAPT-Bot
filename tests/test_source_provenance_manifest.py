@@ -2,7 +2,7 @@ import hashlib, json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED = {"source", "isolation_scaffold", "integration_artifact"}
+ALLOWED = {"source", "isolation_scaffold", "integration_artifact", "component_fix"}
 
 def test_source_provenance_entries_are_typed_and_hash_bound():
     data = json.loads((ROOT / "SOURCE_PROVENANCE.json").read_text())
