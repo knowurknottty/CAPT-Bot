@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>CAPT Bot</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail rail-left" id="leftRail">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 23 16 5l11 18-11-5z"/></svg>
+        <div><strong>CAPT</strong><span>BOT</span></div>
+      </div>
+      <button class="new-chat" id="newChat">New thread</button>
+      <nav class="nav-block" aria-label="Workspace">
+        <button class="nav-item active" data-view="chat">Conversation</button>
+        <button class="nav-item" data-view="goals">Missions / Goals</button>
+        <button class="nav-item" data-view="evidence">Evidence</button>
+      </nav>
+      <div class="rail-section">
+        <p class="eyebrow">Active goals</p>
+        <div id="missionList" class="mission-list"></div>
+      </div>
+      <div class="rail-footer">
+        <button class="quiet-button" id="openConfig">Runtime configuration</button>
+        <div class="connection"><span id="statusDot"></span><span id="statusText">Connecting</span></div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <button class="icon-button mobile-only" id="toggleLeft" aria-label="Open navigation">Menu</button>
+        <div>
+          <p class="eyebrow">Governed synthetic worker</p>
+          <h1 id="threadTitle">New conversation</h1>
+        </div>
+        <button class="icon-button" id="toggleInspector">Inspect</button>
+      </header>
+
+      <section class="conversation" id="conversation">
+        <div class="welcome" id="welcome">
+          <p class="kicker">Intent in. Evidence out.</p>
+          <h2>Describe the work at human resolution.</h2>
+          <p>Developer mode turns a simple software request into a governed OMNI → META → FORGE → SIGMA execution contract before anything runs.</p>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="composer-zone">
+        <div class="mode-strip">
+          <label class="toggle"><input type="checkbox" id="developerMode"><span></span>Developer</label>
+          <label class="toggle"><input type="checkbox" id="missionMode"><span></span>Mission / Goal</label>
+          <button class="text-button" id="chainButton">OMNI → META → FORGE → SIGMA</button>
+        </div>
+        <div class="composer">
+          <textarea id="promptInput" rows="2" placeholder="Describe what you want CAPT to do…" aria-label="Prompt"></textarea>
+          <button class="send" id="sendPrompt">Send</button>
+        </div>
+        <p class="composer-note" id="composerNote">Nothing executes from this box until CAPT admits the governed path.</p>
+      </section>
+    </main>
+
+    <aside class="rail rail-right" id="inspector">
+      <div class="inspector-head">
+        <div><p class="eyebrow">Execution contract</p><h2>Inspector</h2></div>
+        <button class="icon-button mobile-only" id="closeInspector">Close</button>
+      </div>
+      <section class="panel">
+        <div class="panel-head"><h3>Prompt chain</h3><span id="proposalStatus">Idle</span></div>
+        <ol class="stage-chain" id="stageChain">
+          <li data-stage="OMNI"><b>01</b><span>OMNI</span><em>intent</em></li>
+          <li data-stage="META"><b>02</b><span>META</span><em>contract</em></li>
+          <li data-stage="FORGE"><b>03</b><span>FORGE</span><em>repo</em></li>
+          <li data-stage="SIGMA"><b>04</b><span>SIGMA</span><em>SDR</em></li>
+        </ol>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h3>Compiled proposal</h3><button class="text-button" id="copyProposal">Copy</button></div>
+        <pre id="proposalText" class="proposal-text">No proposal yet.</pre>
+        <div class="proposal-actions">
+          <button class="primary" id="approveProposal" disabled>Approve selected prompt</button>
+          <button class="secondary" id="useOriginal" disabled>Use original</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>Authority / approval</h3><span id="approvalState">None</span></div>
+        <div id="approvalDetail" class="detail-list"><p>No approval request.</p></div>
+        <div class="approval-actions">
+          <button class="approve" id="approveRequest" disabled>Approve once</button>
+          <button class="deny" id="denyRequest" disabled>Deny</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h3>Verification</h3><span id="reviewState">No result</span></div>
+        <div class="detail-list" id="reviewDetail"><p>No provider result awaiting review.</p></div>
+        <input class="review-note" id="reviewNote" placeholder="Verification note (optional)" disabled>
+        <div class="approval-actions">
+          <button class="approve" id="acceptResult" disabled>Accept result</button>
+          <button class="deny" id="rejectResult" disabled>Reject result</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h3>Mission state</h3><button class="text-button" id="refreshState">Refresh</button></div>
+        <div id="runtimeState" class="detail-list"><p>Awaiting RuntimeService.</p></div>
+      </section>
+    </aside>
+  </div>
+
+  <dialog id="configDialog">
+    <form method="dialog" id="configForm">
+      <div class="dialog-head">
+        <div><p class="eyebrow">Local operator control</p><h2>Runtime configuration</h2></div>
+        <button class="icon-button" value="cancel">Close</button>
+      </div>
+      <label>Provider<input id="providerInput" autocomplete="off"></label>
+      <label>Model<input id="modelInput" autocomplete="off"></label>
+      <label>Target repository<input id="rootInput" autocomplete="off"></label>
+      <label>Prompt Intelligence
+        <select id="piInput">
+          <option>AUTO</option><option>OFF</option><option>OMNI</option>
+          <option>META</option><option>FORGE</option><option>SIGMA</option>
+        </select>
+      </label>
+      <p class="dialog-note">Developer mode overrides the normal PI selector and forces the full chain. RuntimeService remains authoritative.</p>
+      <button class="primary full" id="saveConfig" value="default">Apply configuration</button>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
