@@ -77,3 +77,22 @@ Core+Bot acceptance, secrets and entitlement audit, correctly enforced
 authority/approval boundaries, a no-write/dry-run GitHub issue demo,
 an authorized one-issue write/PR demonstration, negative/red-team tests,
 restart/reconciliation, and human/agent documentation verification.
+
+## Verified first integration slice (not R5 completion)
+
+- `CAPT Core` full Python suite on the current implementation: **1,967 passed,
+  70 skipped, 13 deselected**.
+- Native Swift suite after Bot registration: **145 passed, 9 skipped**.
+- Bot cockpit focused tests: **11 passed**.
+- Bot-to-Core isolated HTTP registration integration: **1 passed**.
+  This test launches a temporary Core RuntimeService, registers via the
+  actual Bot UI HTTP bridge, reads back the authoritative Bot aggregate,
+  and terminates its test-owned runtime process.
+- The historical standalone Bot suite **did not collect**: 40 import
+  errors due to Core-owned modules not being available from the isolated
+  Bot checkout. R5 semantic rebase and full integration gates remain open.
+- The live production CAPT RuntimeService was intentionally **not restarted**
+  while historical running execution markers require reconciliation.
+  Consequently, live native Create Bot availability is **not yet proven**.
+- No model council/provider review calls were issued and no HumanApproval
+  was automatically decided in this integration slice.
