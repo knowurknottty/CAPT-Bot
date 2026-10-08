@@ -198,10 +198,29 @@ function renderRuntime(snapshot) {
   if (pending) renderApproval(pending);
 }
 
+function renderBots(snapshot) {
+  const box = $("botList");
+  box.replaceChildren();
+  const bots = Array.isArray(snapshot?.bots) ? snapshot.bots : [];
+  if (!bots.length) {
+    box.textContent = "No registered Bots";
+    return;
+  }
+  for (const bot of bots) {
+    const item = document.createElement("p");
+    item.className = "bot-list-item";
+    item.textContent = `${bot.displayName || bot.botId} · ${bot.roleKind || "crew"}`;
+    item.title = bot.botId;
+    box.append(item);
+  }
+}
+
 async function refresh() {
   try {
     const snapshot = await api("/api/snapshot");
     renderRuntime(snapshot);
+    const bots = await api("/api/bots");
+    renderBots(bots);
   } catch (error) {
     $("statusDot").classList.remove("ok");
     $("statusText").textContent = "Runtime unavailable";
@@ -389,6 +408,41 @@ async function newThread() {
   }
 }
 
+async function registerBot(event) {
+  event.preventDefault();
+  const submit = $("registerBotButton");
+  if (submit.disabled) return;
+  submit.disabled = true;
+  $("createBotError").textContent = "";
+  try {
+    const response = await api("/api/bots/register", {
+      method: "POST",
+      body: JSON.stringify({
+        botId: $("botIDInput").value.trim(),
+        displayName: $("botNameInput").value.trim(),
+        role: $("botRoleInput").value.trim(),
+        primaryModel: $("botModelInput").value.trim() || null,
+        defaultRuntime: $("botRuntimeInput").value,
+        cloudAllowed: $("botCloudInput").checked,
+      }),
+    });
+    if (!["accepted", "idempotent"].includes(response.status) ||
+        !response.result?.identityOnly) {
+      throw new Error("Runtime did not confirm identity-only registration");
+    }
+    $("createBotDialog").close();
+    addMessage("CAPT · Bot", `${response.result.botId} registered. No tool or execution authority granted.`, "capt");
+    await refresh();
+  } catch (error) {
+    $("createBotError").textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+$("createBot").addEventListener("click", () => $("createBotDialog").showModal());
+$("closeBotDialog").addEventListener("click", () => $("createBotDialog").close());
+$("createBotForm").addEventListener("submit", registerBot);
 $("sendPrompt").addEventListener("click", sendPrompt);
 $("promptInput").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {

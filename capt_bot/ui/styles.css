@@ -146,11 +146,13 @@ button { cursor: pointer; }
 
 dialog { width: min(560px, calc(100vw - 28px)); border: 1px solid var(--line); border-radius: 18px; background: var(--quiet); color: var(--ink); padding: 0; }
 dialog::backdrop { background: rgb(10 15 20 / 78%); }
-#configForm { padding: 22px; display: grid; gap: 14px; }
+#configForm, #createBotForm { padding: 22px; display: grid; gap: 14px; }
 .dialog-head { display: flex; justify-content: space-between; align-items: start; }
 .dialog-head h2 { margin: 0; font-size: 19px; }
-#configForm label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-#configForm input, #configForm select { background: var(--field); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; padding: 10px; text-transform: none; letter-spacing: 0; }
+#configForm label, #createBotForm label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+#configForm input, #configForm select, #createBotForm input, #createBotForm select { background: var(--field); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; padding: 10px; text-transform: none; letter-spacing: 0; }
+#createBotForm input[type="checkbox"] { width: auto; margin-inline-end: 8px; }
+.bot-list-item { margin: 5px 0; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
 .dialog-note { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
 .full { width: 100%; }
 .mobile-only { display: none; }

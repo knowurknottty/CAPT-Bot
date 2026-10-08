@@ -15,11 +15,16 @@
         <div><strong>CAPT</strong><span>BOT</span></div>
       </div>
       <button class="new-chat" id="newChat">New thread</button>
+      <button class="quiet-button" id="createBot">Create Bot</button>
       <nav class="nav-block" aria-label="Workspace">
         <button class="nav-item active" data-view="chat">Conversation</button>
         <button class="nav-item" data-view="goals">Missions / Goals</button>
         <button class="nav-item" data-view="evidence">Evidence</button>
       </nav>
+      <div class="rail-section">
+        <p class="eyebrow">Registered Bots</p>
+        <div id="botList" class="mission-list" aria-live="polite">Loading…</div>
+      </div>
       <div class="rail-section">
         <p class="eyebrow">Active goals</p>
         <div id="missionList" class="mission-list"></div>
@@ -127,6 +132,24 @@
       </label>
       <p class="dialog-note">Developer mode overrides the normal PI selector and forces the full chain. RuntimeService remains authoritative.</p>
       <button class="primary full" id="saveConfig" value="default">Apply configuration</button>
+    </form>
+  </dialog>
+
+  <dialog id="createBotDialog">
+    <form id="createBotForm">
+      <div class="dialog-head">
+        <div><p class="eyebrow">Governed identity</p><h2>Create Bot</h2></div>
+        <button type="button" class="icon-button" id="closeBotDialog">Close</button>
+      </div>
+      <label>Bot ID<input id="botIDInput" maxlength="100" required pattern="[A-Za-z0-9_.:-]+" value="issue-steward"></label>
+      <label>Display name<input id="botNameInput" maxlength="256" required value="Issue Steward"></label>
+      <label>Role<input id="botRoleInput" maxlength="128" required value="Review and resolve GitHub issues sequentially with evidence gates"></label>
+      <label>Primary model (optional)<input id="botModelInput" maxlength="256" value="deepseek/deepseek-v4.1-flash"></label>
+      <label>Preferred runtime<select id="botRuntimeInput"><option value="either">Either</option><option value="local">Local</option><option value="cloud">Cloud</option></select></label>
+      <label><input id="botCloudInput" type="checkbox"> Cloud data handling allowed</label>
+      <p class="dialog-note">Registration only. No credentials, tool lease, automatic execution or authority is created.</p>
+      <p class="dialog-note" id="createBotError" role="alert"></p>
+      <button class="primary full" type="submit" id="registerBotButton">Register identity</button>
     </form>
   </dialog>
 

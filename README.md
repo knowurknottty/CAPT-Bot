@@ -8,6 +8,10 @@ The repository began as a verified project-layer extraction from `knowurknottty/
 
 Start here:
 
+- `docs/PUBLIC_USER_GUIDE.md` — pre-release human guide for the local cockpit, Bot identity, governed chat and limitations.
+- `docs/AGENT_OPERATOR_GUIDE.md` — agent contract for sequential GitHub issue repair, approvals, evidence, and genuine task-specific recursion.
+- `docs/RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md` — five-chat council/independent review plan with explicit release blockers.
+
 - `docs/architecture/CAPT_BOT_CONVERGENCE_R5.md` — authoritative R5 architecture/convergence specification.
 - `docs/superpowers/plans/2026-09-17-capt-bot-r5-deepseek44-sdr.md` — System Design + Delivery Requirements and 44-vessel DeepSeek implementation handoff.
 - `docs/architecture/CAPT_BOT_FOUNDATION_R1.md` — original Bot foundation semantics.

@@ -19,6 +19,52 @@ class BotOperatorController:
     def _command(self, op: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         return self.runtime.command(op, payload)
 
+    def bots(self) -> Dict[str, Any]:
+        return self._query("bots")
+
+    def register_bot(
+        self,
+        *,
+        bot_id: str,
+        display_name: str,
+        role: str,
+        primary_model: Optional[str] = None,
+        default_runtime: str = "either",
+        cloud_allowed: bool = False,
+    ) -> Dict[str, Any]:
+        """Register identity only, through Core's authenticated BotManifest act.
+
+        Bot R5 retains ownership of workflow and UI. CAPT RuntimeService
+        remains sole writer and injects creator identity and timestamp.
+        """
+        import re
+        if not re.fullmatch(r"[A-Za-z0-9_.:-]{1,100}", bot_id):
+            raise ValueError("invalid bot id")
+        if not 1 <= len(display_name.strip()) <= 256:
+            raise ValueError("invalid bot display name")
+        if not 1 <= len(role.strip()) <= 128:
+            raise ValueError("invalid bot role")
+        if default_runtime not in ("local", "cloud", "either"):
+            raise ValueError("invalid bot default runtime")
+        if primary_model is not None and len(primary_model) > 256:
+            raise ValueError("primary model identifier too long")
+        return self._command("register_bot", {"bot": {
+            "schemaVersion": "1.0.0",
+            "botId": bot_id,
+            "displayName": display_name.strip(),
+            "roleKind": "crew",
+            "role": role.strip(),
+            "missionId": None,
+            "modelStrategy": {"primary": primary_model or None, "fallbacks": []},
+            "cognitionPolicy": {"promotionMode": "governed"},
+            "localityPolicy": {
+                "defaultRuntime": default_runtime,
+                "privateData": "cloud_allowed" if cloud_allowed else "local_only",
+            },
+            "collaboration": {"mayDelegate": False, "maxSpawnDepth": 0},
+            "authorityTemplateRef": None,
+        }})
+
     def control(self) -> Dict[str, Any]:
         return self._query("operator_control_snapshot")
 

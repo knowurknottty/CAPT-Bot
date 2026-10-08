@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import threading
 import uuid
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,18 +25,27 @@ class CoreRuntimePort:
             sys.path.insert(0, root)
         from desktop.desktop_runtime_client import RuntimeClient
 
+        self._socket_lock = threading.RLock()
         self.client = RuntimeClient(sock_path, token_file, command_timeout=None)
         self.identity = self.client.connect()
 
     def query(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        return self.client._query(request)["result"]
+        with self._socket_lock:
+            return self.client._query(request)["result"]
 
     def command(self, op: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        key = "captbot-" + uuid.uuid4().hex
-        return self.client.command(op, payload, idempotency_key=key)
+        # Keep Bot registration repeatable across HTTP timeouts without
+        # accidentally claiming two differently scoped identities.
+        if op == "register_bot" and isinstance(payload.get("bot"), dict):
+            key = "captbot-register:" + str(payload["bot"].get("botId", ""))
+        else:
+            key = "captbot-" + uuid.uuid4().hex
+        with self._socket_lock:
+            return self.client.command(op, payload, idempotency_key=key)
 
     def close(self) -> None:
-        self.client.disconnect()
+        with self._socket_lock:
+            self.client.disconnect()
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -58,7 +68,21 @@ class BotUiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _origin_allowed(self) -> bool:
+        # Binding to loopback is not enough: reject DNS rebinding, hostile
+        # Host headers, and browser-originated cross-site mutations.
+        port = self.server.server_address[1]
+        allowed = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"}
+        hosts = self.headers.get_all("Host", [])
+        if len(hosts) != 1 or hosts[0].lower() not in allowed:
+            return False
+        origin = self.headers.get("Origin")
+        return origin is None or origin.lower() == "http://" + hosts[0].lower()
+
     def _read_json(self) -> Dict[str, Any]:
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            raise ValueError("Content-Type must be application/json")
         length = int(self.headers.get("Content-Length", "0"))
         if length < 0 or length > 1024 * 1024:
             raise ValueError("request body size invalid")
@@ -80,6 +104,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
 
 
     def do_GET(self) -> None:
+        if not self._origin_allowed():
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "forbidden_origin_or_host"})
+            return
         try:
             if self.path == "/":
                 self._send_static("index.html", "text/html; charset=utf-8")
@@ -96,11 +123,17 @@ class BotUiHandler(BaseHTTPRequestHandler):
             if self.path == "/api/snapshot":
                 self._send_json(HTTPStatus.OK, self.controller.snapshot())
                 return
+            if self.path == "/api/bots":
+                self._send_json(HTTPStatus.OK, self.controller.bots())
+                return
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
         except Exception as exc:
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
 
     def do_POST(self) -> None:
+        if not self._origin_allowed():
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "forbidden_origin_or_host"})
+            return
         try:
             body = self._read_json()
             if self.path == "/api/chat/new":
@@ -130,6 +163,15 @@ class BotUiHandler(BaseHTTPRequestHandler):
                     requested_execution_seconds=int(body.get("requestedExecutionSeconds", 1800)),
                 )
 
+            elif self.path == "/api/bots/register":
+                result = self.controller.register_bot(
+                    bot_id=str(body.get("botId") or ""),
+                    display_name=str(body.get("displayName") or ""),
+                    role=str(body.get("role") or ""),
+                    primary_model=str(body["primaryModel"]) if body.get("primaryModel") else None,
+                    default_runtime=str(body.get("defaultRuntime") or "either"),
+                    cloud_allowed=body.get("cloudAllowed") is True,
+                )
             elif self.path == "/api/approval/decide":
                 result = self.controller.decide_approval(
                     str(body.get("requestId") or ""),

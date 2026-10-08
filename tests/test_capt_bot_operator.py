@@ -33,12 +33,16 @@ class FakeRuntime:
             return {"control": dict(self.control_state), "proposal": dict(self.proposal)}
         if op == "get_state":
             return {"state": "awaiting_verification"}
+        if op == "bots":
+            return {"bots": [{"botId": "issue-steward", "displayName": "Issue Steward", "roleKind": "crew"}]}
         if op in {"operator_execution_state", "missions", "tasks", "approvals"}:
             return []
         raise AssertionError("unexpected query " + op)
 
     def command(self, op, payload):
         self.calls.append((op, payload))
+        if op == "register_bot":
+            return {"status": "accepted", "result": {"botId": payload["bot"]["botId"], "identityOnly": True}}
         if op == "operator_prompt_submit":
             return {"result": {"proposal": {"mode": payload["mode"]}}}
         if op == "operator_prompt_clarify":
@@ -141,3 +145,38 @@ def test_result_review_delegates_completion_to_runtime():
         "note": "tests pass",
     }
     assert receipt["result"]["missionState"] == "completed"
+
+
+def test_bot_registration_routes_to_core_not_local_state():
+    runtime = FakeRuntime()
+    controller = BotOperatorController(runtime)
+    result = controller.register_bot(
+        bot_id="issue-steward",
+        display_name="Issue Steward",
+        role="Repair GitHub issues sequentially",
+        primary_model="deepseek/deepseek-v4.1-flash",
+    )
+    assert result["result"]["identityOnly"] is True
+    op, payload = runtime.calls[-1]
+    assert op == "register_bot"
+    bot = payload["bot"]
+    assert bot["botId"] == "issue-steward"
+    assert bot["roleKind"] == "crew"
+    assert bot["cognitionPolicy"] == {"promotionMode": "governed"}
+    assert bot["collaboration"] == {"mayDelegate": False, "maxSpawnDepth": 0}
+    assert bot["localityPolicy"]["privateData"] == "local_only"
+    assert "createdBy" not in bot and "createdAt" not in bot and "credentials" not in bot
+    assert controller.bots()["bots"][0]["botId"] == "issue-steward"
+
+
+def test_bot_registration_rejects_invalid_and_unsafe_identity():
+    import pytest
+    runtime = FakeRuntime()
+    controller = BotOperatorController(runtime)
+    for bot_id in ["", "bot/../escape", "has spaces"]:
+        with pytest.raises(ValueError):
+            controller.register_bot(bot_id=bot_id, display_name="X", role="review")
+    with pytest.raises(ValueError):
+        controller.register_bot(bot_id="bot-a", display_name="X", role="review",
+                                default_runtime="unrestricted")
+    assert runtime.calls == []
