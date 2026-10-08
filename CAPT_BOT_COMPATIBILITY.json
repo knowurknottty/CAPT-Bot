@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "releaseStatus": "PRE_RELEASE_STAGE_A_ONLY",
+  "botProductVersion": "R5-stage-A",
+  "testedCore": {
+    "repo": "knowurknottty/CAPT_core",
+    "commit": "783f06bd15f185b2eeeea10c85f6e993a09237e8",
+    "packageVersion": "0.5.0",
+    "runtimeCompatibilityVersion": "0.1.0",
+    "contractSchemaVersion": "1.0.0"
+  },
+  "requiredCore": {
+    "minimumPackageVersion": "0.5.0",
+    "contractSchemaVersion": "1.0.0",
+    "runtimeExtensionSeamVersion": null,
+    "toolBrokerVersion": null,
+    "driverContractVersion": null
+  },
+  "bot": {
+    "schemaVersion": "1.0.0",
+    "migrationVersion": null,
+    "productionExtensionWired": false
+  },
+  "features": {
+    "authenticatedBotRegistration": true,
+    "swiftNativeKanbanR1": true,
+    "botLifecycleActivation": false,
+    "durableMultiActorKanbanR2": false,
+    "canonicalBotTurnR5": false,
+    "governedSequentialGitHubIssueSolver": false,
+    "sandboxCloudR5Certified": false
+  },
+  "verification": {
+    "corePython": "1970 passed, 70 skipped, 13 deselected",
+    "nativeSwift": "148 passed, 9 skipped",
+    "isolatedBotCompatibility": "333 passed, 8 skipped (test-only source overlay)",
+    "realR5Acceptance": "NOT_RUN",
+    "evidenceDoc": "docs/RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md",
+    "evidenceDigest": null
+  },
+  "note": "Design-time compatibility ledger, not a runtime admission contract or an R5 release certificate. Version gates must fail closed once actual Core extension seam is implemented."
+}

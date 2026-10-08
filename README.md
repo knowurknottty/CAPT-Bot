@@ -11,6 +11,8 @@ Start here:
 - `docs/PUBLIC_USER_GUIDE.md` — pre-release human guide for the local cockpit, Bot identity, governed chat and limitations.
 - `docs/AGENT_OPERATOR_GUIDE.md` — agent contract for sequential GitHub issue repair, approvals, evidence, and genuine task-specific recursion.
 - `docs/RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md` — five-chat council/independent review plan with explicit release blockers.
+- `CAPT_BOT_COMPATIBILITY.json` — pre-release design-time compatibility baseline, not production R5 admission.
+- `scripts/run_r5_stage_a_compatibility.py` — reproducible test-only 333-test historical compatibility suite; NOT R5 full acceptance.
 
 - `docs/architecture/CAPT_BOT_CONVERGENCE_R5.md` — authoritative R5 architecture/convergence specification.
 - `docs/superpowers/plans/2026-09-17-capt-bot-r5-deepseek44-sdr.md` — System Design + Delivery Requirements and 44-vessel DeepSeek implementation handoff.

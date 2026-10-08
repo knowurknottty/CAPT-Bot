@@ -96,3 +96,29 @@ restart/reconciliation, and human/agent documentation verification.
   Consequently, live native Create Bot availability is **not yet proven**.
 - No model council/provider review calls were issued and no HumanApproval
   was automatically decided in this integration slice.
+
+
+## Reproducible R5 Stage-A compatibility gate (2026-10-08)
+
+From a CAPT-Bot checkout with Python dependencies installed:
+
+```zsh
+python scripts/run_r5_stage_a_compatibility.py --core-root /path/to/CAPT_core
+```
+
+Against exact Core `783f06bd15f185b2eeeea10c85f6e993a09237e8`,
+with current CAPT-Bot test sources: **333 passed, 8 skipped**.
+Local log: `~/capt-node-workspace/capt-bot-stage-a-repro-gate.log`.
+
+This script deliberately extends Python module discovery **inside the test
+process only** so historical Bot-owned `capt_runtime` modules coexist with
+current Core modules. It neither applies the old patch nor mutates the tested
+Core worktree. It is a **compatibility research gate**, not the actual
+startup composition contract, migration, Bot activation, delegation, or
+full production acceptance test.
+
+`CAPT_BOT_COMPATIBILITY.json` records observed version/feature baselines
+and leaves runtime extension seam, driver/tool compatibility, production
+extension wiring, and evidence digest explicitly incomplete. It is NOT
+yet consumed for runtime admission. Therefore the R5 release gate remains
+blocked despite the green historical suite.
