@@ -31,8 +31,35 @@ def github_issue_inventory() -> Dict[str, Any]:
         entries = json.loads(output.stdout)
         if not isinstance(entries, list):
             raise ValueError("unexpected issue inventory shape")
+        remote_head = None
+        local_head = None
+        try:
+            remote = subprocess.run(
+                ["/opt/homebrew/bin/gh", "api",
+                 "repos/knowurknottty/CAPT_core/commits/main",
+                 "--jq", ".sha"],
+                check=True, capture_output=True, text=True, timeout=10,
+            ).stdout.strip()
+            if re.fullmatch(r"[0-9a-f]{40}", remote):
+                remote_head = remote
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
+        try:
+            local = subprocess.run(
+                ["/usr/bin/git", "-C", str(Path.home() / "CAPT_core"),
+                 "rev-parse", "HEAD"],
+                check=True, capture_output=True, text=True, timeout=5,
+            ).stdout.strip()
+            if re.fullmatch(r"[0-9a-f]{40}", local):
+                local_head = local
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
         return {
             "source": "GitHub CLI (read only)", "repository": ISSUES_REPO,
+            "remoteHead": remote_head, "localHead": local_head,
+            "headAlignment": ("identical" if remote_head == local_head else
+                              "different; inspect history before writes")
+                             if remote_head and local_head else "unverified",
             "status": "ok", "openCount": len(entries),
             "issues": [
                 {"number": entry["number"], "title": entry["title"][:240],
@@ -151,6 +178,9 @@ def inspect_mission(controller: Any, mission_id: str) -> Dict[str, Any]:
             "Do not claim earlier success from a suspended or cancelled task. "
             "Do not automatically restart, dispatch provider work, push, edit issues "
             "or approve yourself. Stop at ambiguity and obtain human approval.\n"
+            f"GitHub repository HEAD: {issue_snapshot.get('remoteHead') or 'unavailable'}.\n"
+            f"Local CAPT_core HEAD: {issue_snapshot.get('localHead') or 'unavailable'} "
+            f"(comparison: {issue_snapshot.get('headAlignment', 'unverified')}).\n"
             "Current open GitHub issues observed (reverify before use):\n"
             + "\n".join(issue_lines[:60])
         )

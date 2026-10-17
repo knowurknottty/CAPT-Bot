@@ -127,6 +127,13 @@ async function inspectMissionRecovery() {
         github.openCount + " GitHub issues open · independent read-only inventory" :
         "GitHub inventory unavailable: verify before decisions";
       issues.append(title);
+      if (github.status === "ok") {
+        const head = document.createElement("p");
+        head.textContent = "GitHub HEAD: " + (github.remoteHead || "unavailable") +
+          " · Local HEAD: " + (github.localHead || "unavailable") +
+          " · " + (github.headAlignment || "unverified");
+        issues.append(head);
+      }
       for (const issue of (github.issues || []).slice(0, 30)) {
         const row = document.createElement("p");
         const link = document.createElement("a");
