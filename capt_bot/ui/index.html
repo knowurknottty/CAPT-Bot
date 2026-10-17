@@ -191,8 +191,17 @@
         <div><p class="eyebrow">Local operator control</p><h2>Runtime configuration</h2></div>
         <button class="icon-button" value="cancel">Close</button>
       </div>
-      <label>Provider<input id="providerInput" autocomplete="off"></label>
-      <label>Model<input id="modelInput" autocomplete="off"></label>
+      <label>Provider
+        <select id="providerInput" required disabled><option value="">Loading configured providers…</option></select>
+      </label>
+      <label>Search models
+        <input id="modelSearch" type="search" placeholder="Filter configured models" autocomplete="off" disabled>
+      </label>
+      <label>Model
+        <select id="modelInput" required disabled><option value="">Select a provider first</option></select>
+      </label>
+      <p class="dialog-note" id="catalogStatus" aria-live="polite">Provider and model choices come from CAPT's configured registry, not a live availability check.</p>
+      <p class="dialog-note config-error" id="configError" role="alert"></p>
       <label>Target repository<input id="rootInput" autocomplete="off"></label>
       <label>Prompt Intelligence
         <select id="piInput">

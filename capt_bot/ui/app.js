@@ -13,6 +13,7 @@ const state = {
   busy: false,
   recoveryMissionId: null,
   workflowPhase: null,
+  providerCatalog: null,
 };
 
 async function api(path, options = {}) {
@@ -261,10 +262,11 @@ function renderRuntime(snapshot) {
     row.append(left, right);
     list.append(row);
   }
-  $("providerInput").value = control.provider || "";
-  $("modelInput").value = control.model || "";
-  $("rootInput").value = control.targetRoot || "";
-  $("piInput").value = control.promptIntelligence || "AUTO";
+  // Background refresh must not overwrite the user's in-progress selections.
+  if (!$("configDialog").open) {
+    $("rootInput").value = control.targetRoot || "";
+    $("piInput").value = control.promptIntelligence || "AUTO";
+  }
 
   // Never overwrite the exact current-session approval with an unrelated
   // global summary (which lacks a DriverRun binding).
@@ -481,23 +483,122 @@ async function reviewResult(disposition) {
   }
 }
 
+function setConfigError(message) {
+  $("configError").textContent = message || "";
+}
+
+function activeCatalogProvider() {
+  return state.providerCatalog?.providers?.find(p => p.id === $("providerInput").value);
+}
+
+function modelChoiceLabel(model) {
+  // For full local file paths, the filename is easier to recognize. The option
+  // value remains the exact configured model ID/path (never reconstructed).
+  return model.startsWith("/") ? model.split("/").pop() : model;
+}
+
+function fillModelChoices(preferred = "") {
+  const provider = activeCatalogProvider();
+  const models = Array.isArray(provider?.models) ? provider.models : [];
+  const query = $("modelSearch").value.trim().toLowerCase();
+  const selected = models.includes(preferred) ? preferred : "";
+  const choices = models.filter(m => !query || m.toLowerCase().includes(query));
+  if (selected && !choices.includes(selected)) choices.unshift(selected);
+  const select = $("modelInput");
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = models.length ? "Choose a configured model" : "No configured models";
+  select.append(placeholder);
+  for (const model of choices) {
+    const option = document.createElement("option");
+    option.value = model;
+    option.textContent = modelChoiceLabel(model);
+    option.title = model;
+    select.append(option);
+  }
+  select.value = selected;
+  select.disabled = !models.length;
+  $("modelSearch").disabled = !models.length;
+  $("catalogStatus").textContent = provider ?
+    provider.name + " · " + provider.kind + " · " + models.length +
+    " configured model(s)" + (query ? " · " + choices.length + " displayed" : "") +
+    ". Configuration does not guarantee provider availability." :
+    "Select a provider. No network model discovery or paid requests are performed.";
+  $("saveConfig").disabled = !models.length || !selected || state.busy;
+}
+
+async function openRuntimeConfiguration() {
+  $("configDialog").showModal();
+  setConfigError("");
+  $("saveConfig").disabled = true;
+  $("providerInput").disabled = true;
+  $("modelInput").disabled = true;
+  $("modelSearch").disabled = true;
+  $("modelSearch").value = "";
+  $("rootInput").value = state.snapshot?.control?.targetRoot || "";
+  $("piInput").value = state.snapshot?.control?.promptIntelligence || "AUTO";
+  $("catalogStatus").textContent = "Reading CAPT's configured provider registry…";
+  try {
+    const catalog = await api("/api/providers");
+    if (!$("configDialog").open) return;
+    state.providerCatalog = catalog;
+    const select = $("providerInput");
+    select.replaceChildren();
+    const choose = document.createElement("option");
+    choose.value = "";
+    choose.textContent = "Choose provider";
+    select.append(choose);
+    for (const provider of catalog.providers || []) {
+      const option = document.createElement("option");
+      option.value = provider.id;
+      option.textContent = provider.name + " (" + provider.id + ")" +
+        (provider.models.length ? "" : " · No configured models");
+      option.disabled = !provider.models.length;
+      select.append(option);
+    }
+    const control = state.snapshot?.control || {};
+    const current = catalog.providers.find(p => p.id === control.provider);
+    select.value = current?.models.length ? current.id : "";
+    select.disabled = false;
+    fillModelChoices(select.value ? control.model : "");
+    if (control.provider && !select.value) {
+      setConfigError("Current provider is missing, disabled, or has no configured models. Select an available provider.");
+    } else if (select.value && !($("modelInput").value)) {
+      setConfigError("Current model is not listed under this provider. Choose a configured model before applying.");
+    }
+  } catch (error) {
+    if (!$("configDialog").open) return;
+    state.providerCatalog = null;
+    $("catalogStatus").textContent = "Provider catalog unavailable.";
+    setConfigError(error.message + ". No configuration has been changed.");
+  }
+}
+
 async function saveConfig(event) {
   event.preventDefault();
   try {
+    const provider = activeCatalogProvider();
+    const model = $("modelInput").value;
+    if (!provider || !provider.models.includes(model))
+      throw new Error("Choose a valid provider and configured model before applying.");
+    $("saveConfig").disabled = true;
     const result = await api("/api/config", {
       method: "POST",
       body: JSON.stringify({
-        provider: $("providerInput").value.trim(),
-        model: $("modelInput").value.trim(),
+        provider: provider.id,
+        model,
         targetRoot: $("rootInput").value.trim(),
         promptIntelligence: $("piInput").value,
       }),
     });
-    renderRuntime({...(state.snapshot || {}), control: result});
+    state.snapshot = {...(state.snapshot || {}), control: result};
     $("configDialog").close();
+    renderRuntime(state.snapshot);
     addMessage("CAPT", "Runtime configuration updated. No execution was started.", "capt");
   } catch (error) {
-    $("composerNote").textContent = error.message;
+    setConfigError(error.message);
+    fillModelChoices($("modelInput").value);
   }
 }
 
@@ -602,7 +703,23 @@ $("acceptResult").addEventListener("click", () => reviewResult("accept"));
 $("rejectResult").addEventListener("click", () => reviewResult("reject"));
 $("refreshState").addEventListener("click", refresh);
 $("newChat").addEventListener("click", newThread);
-$("openConfig").addEventListener("click", () => $("configDialog").showModal());
+$("openConfig").addEventListener("click", openRuntimeConfiguration);
+$("providerInput").addEventListener("change", () => {
+  $("modelSearch").value = "";
+  setConfigError("");
+  fillModelChoices();
+});
+$("modelInput").addEventListener("change", () => {
+  setConfigError("");
+  fillModelChoices($("modelInput").value);
+});
+$("modelSearch").addEventListener("input", () => {
+  fillModelChoices($("modelInput").value);
+});
+$("configDialog").addEventListener("close", () => {
+  state.providerCatalog = null;
+  setConfigError("");
+});
 $("configForm").addEventListener("submit", saveConfig);
 $("copyProposal").addEventListener("click", async () => {
   if (state.proposal?.proposedPrompt) {

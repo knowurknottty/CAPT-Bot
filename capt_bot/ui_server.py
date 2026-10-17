@@ -153,6 +153,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
             if self.path == "/api/kanban":
                 self._send_json(HTTPStatus.OK, self.controller.kanban())
                 return
+            if self.path == "/api/providers":
+                self._send_json(HTTPStatus.OK, self.controller.provider_catalog())
+                return
             if urlsplit(self.path).path == "/api/mission/recovery":
                 args = parse_qs(urlsplit(self.path).query)
                 mids = args.get("missionId", [])

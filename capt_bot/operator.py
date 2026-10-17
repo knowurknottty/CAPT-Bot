@@ -87,6 +87,10 @@ class BotOperatorController:
         })
         return dict(receipt["result"])
 
+    def provider_catalog(self) -> Dict[str, Any]:
+        from .provider_catalog import read_provider_catalog
+        return read_provider_catalog()
+
     def configure(
         self,
         *,
@@ -95,6 +99,16 @@ class BotOperatorController:
         target_root: Optional[str] = None,
         prompt_intelligence: Optional[str] = None,
     ) -> Dict[str, Any]:
+        # Validate before ensure_chat (which can create a session).
+        # An invalid dropdown pair must have zero RuntimeService write effects.
+        existing = self.control()
+        if provider is not None or model is not None:
+            from .provider_catalog import validate_provider_model
+            validate_provider_model(
+                provider if provider is not None else str(existing.get("provider") or ""),
+                model if model is not None else str(existing.get("model") or ""),
+                self.provider_catalog(),
+            )
         control = self.ensure_chat()
         payload: Dict[str, Any] = {"expectedRevision": int(control["revision"])}
         for key, value in (
