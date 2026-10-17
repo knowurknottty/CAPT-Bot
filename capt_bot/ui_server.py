@@ -235,21 +235,8 @@ class BotUiHandler(BaseHTTPRequestHandler):
                     str(body.get("decision") or ""),
                     str(body.get("note") or ""),
                 )
-            elif self.path == "/api/run":
-                approval = body.get("approval")
-                if not isinstance(approval, dict):
-                    raise ValueError("approval receipt is required")
-                result = self.controller.run_approved(
-                    approval,
-                    str(body.get("objective") or ""),
-                    response_mode=str(body.get("responseMode") or "SPOCK"),
-                    requested_context_budget=int(
-                        body.get("requestedContextBudget", 32000)
-                    ),
-                    human_verification_required=bool(
-                        body.get("humanVerificationRequired", True)
-                    ),
-                )
+            elif self.path == "/api/run/start":
+                result = self.controller.start_bound_task(str(body.get("requestId") or ""))
             elif self.path == "/api/result/review":
                 result = self.controller.review_result(
                     str(body.get("driverRunId") or ""),

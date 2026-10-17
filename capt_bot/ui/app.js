@@ -75,6 +75,13 @@ function renderProposal(proposal) {
   const status = proposal?.compilationStatus || proposal?.status || "Idle";
   $("proposalStatus").textContent = status;
   $("proposalText").textContent = proposal?.proposedPrompt || "No proposal yet.";
+  const requested = String(proposal?.originalPrompt || "");
+  const root = String(proposal?.targetRoot || "");
+  const expectedRepo = requested.includes("knowurknottty/CAPT_core");
+  $("proposalTargetNotice").textContent = expectedRepo
+    ? "Target directory: " + (root || "UNSPECIFIED") +
+      ". Verify this checkout is the intended CAPT_core repository before approving. Changing the target requires recompilation."
+    : root ? "Approved execution scope will be limited to: " + root : "";
   renderStages(proposal);
 
   const blocked = status === "clarification_required";
@@ -101,19 +108,22 @@ function renderProposal(proposal) {
 
 function renderApproval(approval) {
   state.approval = approval || null;
-  const requestId = approval?.requestId || approval?.approvalRequestId;
-  const status = approval?.state || approval?.status || "None";
+  const requestId = approval?.requestId;
+  const status = approval?.state || "None";
   $("approvalState").textContent = status;
   $("approvalDetail").replaceChildren();
   const entries = [
     ["request", requestId],
     ["mission", approval?.missionId],
     ["task", approval?.taskId],
+    ["run", approval?.driverRunId],
+    ["provider", [approval?.provider, approval?.model].filter(Boolean).join(" / ")],
+    ["target", approval?.targetRoot],
     ["expires", approval?.expiresAt],
   ].filter(([, value]) => value);
   if (!entries.length) {
     const p = document.createElement("p");
-    p.textContent = "No approval request.";
+    p.textContent = "No current session-bound approval. Select a compiled proposal first.";
     $("approvalDetail").append(p);
   } else {
     for (const [label, value] of entries) {
@@ -127,24 +137,31 @@ function renderApproval(approval) {
       $("approvalDetail").append(row);
     }
   }
-  const pending = Boolean(requestId) && ["pending", "requested", "awaiting_human"].includes(status);
-  const expiresAt = approval?.expiresAt;
-  const expired = Boolean(expiresAt) && Number.isFinite(Date.parse(expiresAt)) &&
-    Date.parse(expiresAt) <= Date.now();
-  // The global approval projection may not carry the run binding. It is
-  // useful for inspection, but not a runnable one-use approval receipt.
   const bound = ["requestId", "missionId", "taskId", "driverRunId"].every(
     key => Boolean(approval?.[key])
   );
-  $("approveRequest").disabled = !pending || expired || !bound;
-  $("denyRequest").disabled = !pending || expired;
-  if (pending && (expired || !bound)) {
-    const warning = document.createElement("p");
-    warning.textContent = expired
-      ? "This approval has expired. Start a fresh governed request."
-      : "This is a summary record, not an executable approval receipt. Open its mission to request a fresh bound approval.";
-    $("approvalDetail").append(warning);
-  }
+  const expiry = Date.parse(approval?.expiresAt || "");
+  const expired = !Number.isFinite(expiry) || expiry <= Date.now();
+  const pending = bound && status === "requested" && !expired;
+  const approved = bound && status === "approved" && !expired &&
+    !approval?.consumedAt && Number(approval?.remainingUses) > 0;
+  const dispatched = Boolean(state.snapshot?.execution?.driverRunState);
+  $("approveRequest").disabled = !pending;
+  $("denyRequest").disabled = !pending;
+  $("startTask").disabled = !approved || dispatched || state.busy;
+  $("startTaskStatus").textContent = !bound
+    ? "No executable receipt is bound to the current session. Use the proposal selector."
+    : expired
+      ? "Approval expired. Select the active proposal again to request fresh authority."
+      : pending
+        ? "Awaiting your HumanApproval. Approving will NOT automatically dispatch."
+        : approved && !dispatched
+          ? "Approved and unused. Start task is a separate, explicitly governed action."
+          : dispatched
+            ? "A DriverRun already exists. Inspect and reconcile its receipt; no automatic replay."
+            : status === "approved"
+              ? "Authority already consumed or exhausted. Reconcile before any further run."
+              : "No runnable authority at state: " + status;
 }
 
 function renderMissions(snapshot) {
@@ -249,11 +266,9 @@ function renderRuntime(snapshot) {
   $("rootInput").value = control.targetRoot || "";
   $("piInput").value = control.promptIntelligence || "AUTO";
 
-  const approvals = rows(snapshot?.approvals);
-  const pending = approvals.find((item) =>
-    ["pending", "requested", "awaiting_human"].includes(item.state)
-  );
-  if (pending) renderApproval(pending);
+  // Never overwrite the exact current-session approval with an unrelated
+  // global summary (which lacks a DriverRun binding).
+  renderApproval(snapshot?.boundApproval || null);
 }
 
 function renderBots(snapshot) {
@@ -355,7 +370,10 @@ async function selectProposal(basis) {
     const approval = result.selection?.result?.approval || result.selection?.approval;
     state.selectedObjective = result.selectedObjective || "";
     state.continuationMissionId = null;
-    if (approval) renderApproval(approval);
+    if (approval) {
+      addMessage("CAPT · authority", "Exact approval request " + approval.requestId +
+        " created. Choose Approve once or Deny; execution requires a separate Start.", "capt");
+    }
     if (result.missionId) {
       addMessage(
         "CAPT · mission",
@@ -378,47 +396,61 @@ async function selectProposal(basis) {
 
 async function decide(decision) {
   const approval = state.approval;
-  const requestId = approval?.requestId || approval?.approvalRequestId;
+  const requestId = approval?.requestId;
   if (!requestId || state.busy) return;
-  setBusy(true, decision === "approve" ? "Approving and dispatching exact bound run…" : "Recording denial…");
+  setBusy(true, decision === "approve" ? "Recording human approval…" : "Recording denial…");
   try {
-    await api("/api/approval/decide", {
+    const receipt = await api("/api/approval/decide", {
       method: "POST",
       body: JSON.stringify({requestId, decision}),
     });
-    addMessage("CAPT · approval", `${decision}: ${requestId}`, "capt");
-    updateWorkflow(decision === "approve" ? "execute" : "approval",
-      decision === "approve" ? "Bound one-use run admitted; awaiting result." :
-      "Approval denied. Re-scope before requesting new authority.");
-    if (decision === "approve") {
-      const run = await api("/api/run", {
-        method: "POST",
-        body: JSON.stringify({
-          approval,
-          objective: state.selectedObjective,
-          requestedContextBudget: 64000,
-          humanVerificationRequired: true,
-        }),
-      });
-      const result = run.result || run;
-      renderReview(result);
-      updateWorkflow("verify", "Inspect the run receipt and verify evidence. Completion is a separate mission decision.");
-      const observation = (result.observations || [])[0]?.summary;
-      addMessage(
-        "CAPT · run",
-        observation || result.outcome || "Run returned without a displayable observation.",
-        "capt",
-      );
-      $("composerNote").textContent =
-        "Execution returned. Mission remains open until verification and completion criteria are satisfied.";
-    }
+    if (!["accepted", "idempotent"].includes(receipt.status))
+      throw new Error("RuntimeService did not accept the approval decision");
+    addMessage("CAPT · approval",
+      decision + ": " + requestId + ". " +
+      (decision === "approve" ? "No run launched. Press Start approved task to dispatch." :
+        "Execution was not launched."), "capt");
+    updateWorkflow("approval", decision === "approve"
+      ? "HumanApproval recorded. Explicit Start approved task is next; no auto-dispatch."
+      : "Approval denied. Re-scope before requesting new authority.");
     await refresh();
   } catch (error) {
     addMessage("CAPT · error", error.message, "system");
   } finally {
     setBusy(false);
+    renderApproval(state.snapshot?.boundApproval || state.approval);
   }
 }
+
+async function startApprovedTask() {
+  const approval = state.approval;
+  if (!approval?.requestId || state.busy || $("startTask").disabled) return;
+  setBusy(true, "Submitting one approved DriverRun. Never automatically replay on timeout…");
+  $("startTask").disabled = true;
+  try {
+    const response = await api("/api/run/start", {
+      method: "POST",
+      body: JSON.stringify({requestId: approval.requestId}),
+    });
+    if (!["accepted", "idempotent"].includes(response.status))
+      throw new Error("RuntimeService did not confirm accepted execution");
+    const result = response.result || response;
+    renderReview(result);
+    updateWorkflow("verify",
+      "Execution returned a receipt; ClaimGuard verification remains independent.");
+    addMessage("CAPT · run", (result.observations || [])[0]?.summary ||
+      result.outcome || "Execution completed or was admitted. Inspect authoritative receipts.", "capt");
+    await refresh();
+  } catch (error) {
+    addMessage("CAPT · error", error.message +
+      " Do not retry automatically; check Mission / Goals and the DriverRun ledger first.", "system");
+    await refresh();
+  } finally {
+    setBusy(false);
+    renderApproval(state.snapshot?.boundApproval || null);
+  }
+}
+
 async function reviewResult(disposition) {
   const run = state.currentRun;
   if (!run?.driverRunId || run.taskState !== "awaiting_verification") return;
@@ -564,6 +596,7 @@ $("promptInput").addEventListener("keydown", (event) => {
 $("approveProposal").addEventListener("click", () => selectProposal("proposed"));
 $("useOriginal").addEventListener("click", () => selectProposal("original"));
 $("approveRequest").addEventListener("click", () => decide("approve"));
+$("startTask").addEventListener("click", startApprovedTask);
 $("denyRequest").addEventListener("click", () => decide("deny"));
 $("acceptResult").addEventListener("click", () => reviewResult("accept"));
 $("rejectResult").addEventListener("click", () => reviewResult("reject"));

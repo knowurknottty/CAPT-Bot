@@ -150,8 +150,9 @@
       <section class="panel">
         <div class="panel-head"><h3>Compiled proposal</h3><button class="text-button" id="copyProposal">Copy</button></div>
         <pre id="proposalText" class="proposal-text">No proposal yet.</pre>
+        <p id="proposalTargetNotice" class="execution-note" role="status"></p>
         <div class="proposal-actions">
-          <button class="primary" id="approveProposal" disabled>Approve selected prompt</button>
+          <button class="primary" id="approveProposal" disabled>Request HumanApproval</button>
           <button class="secondary" id="useOriginal" disabled>Use original</button>
         </div>
       </section>
@@ -162,6 +163,10 @@
         <div class="approval-actions">
           <button class="approve" id="approveRequest" disabled>Approve once</button>
           <button class="deny" id="denyRequest" disabled>Deny</button>
+        </div>
+        <div class="execution-start">
+          <button class="primary full" id="startTask" disabled>Start approved task</button>
+          <p id="startTaskStatus" class="execution-note">Select the proposal, grant HumanApproval, then start the bound task.</p>
         </div>
       </section>
       <section class="panel">

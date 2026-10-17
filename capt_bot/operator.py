@@ -5,13 +5,16 @@ authoritative for state, approval, execution, verification, and mission lifecycl
 """
 from __future__ import annotations
 
+import threading
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
 class BotOperatorController:
     def __init__(self, runtime: Any) -> None:
         self.runtime = runtime
+        self._start_lock = threading.Lock()
 
     def _query(self, op: str, **fields: Any) -> Dict[str, Any]:
         return self.runtime.query({"op": op, **fields})
@@ -267,6 +270,69 @@ class BotOperatorController:
             "selectedObjective": selected_objective,
         }
 
+    def start_bound_task(self, request_id: str) -> Dict[str, Any]:
+        # Serialize competing clicks in this Bot worker. RuntimeService's
+        # atomic one-use authority remains the cross-process final gate.
+        if not self._start_lock.acquire(blocking=False):
+            raise ValueError("START_ALREADY_IN_PROGRESS_RECONCILE_FIRST")
+        try:
+            return self._start_bound_task_once(request_id)
+        finally:
+            self._start_lock.release()
+
+    def _start_bound_task_once(self, request_id: str) -> Dict[str, Any]:
+        """Human-clicked Start reconstructed only from authoritative streams.
+
+        Never accept client-supplied approval bindings or auto-replay a run
+        after a network timeout. RuntimeService remains the final authority.
+        """
+        control = self.control()
+        if not request_id or control.get("approvalRequestId") != request_id:
+            raise ValueError("BOUND_APPROVAL_SESSION_MISMATCH")
+        execution = self._query("operator_execution_state")
+        approval = execution.get("approvalRequestState") or {}
+        if approval.get("requestId") != request_id or approval.get("state") != "approved":
+            raise ValueError("HUMAN_APPROVAL_NOT_APPROVED")
+        if (approval.get("consumedAt")
+                or type(approval.get("remainingUses")) is not int
+                or approval["remainingUses"] < 1):
+            raise ValueError("APPROVAL_ALREADY_CONSUMED_OR_EXHAUSTED")
+        try:
+            expiration = datetime.fromisoformat(str(approval["expiresAt"]).replace("Z", "+00:00"))
+            if expiration.tzinfo is None or expiration <= datetime.now(timezone.utc):
+                raise ValueError("APPROVAL_EXPIRED_RESELECT_PROMPT")
+        except (TypeError, KeyError) as exc:
+            raise ValueError("APPROVAL_EXPIRY_UNVERIFIABLE") from exc
+        binding = (approval.get("scope") or {}).get("approvalBinding") or {}
+        for field in ("missionId", "taskId", "driverRunId"):
+            if not control.get(field) or binding.get(field) != control[field]:
+                raise ValueError("APPROVAL_RUN_BINDING_MISMATCH:" + field)
+        if binding.get("targetRoot") != control.get("targetRoot"):
+            raise ValueError("APPROVAL_TARGET_ROOT_CHANGED")
+        if binding.get("provider") != control.get("provider") or binding.get("model") != control.get("model"):
+            raise ValueError("APPROVAL_PROVIDER_MODEL_CHANGED")
+        if binding.get("proposalId") != control.get("proposalId"):
+            raise ValueError("APPROVAL_PROPOSAL_MISMATCH")
+        if execution.get("driverRunState"):
+            raise ValueError("DRIVER_RUN_ALREADY_PRESENT_RECONCILE_FIRST")
+        if control.get("proposalSelection") not in ("original", "proposed"):
+            raise ValueError("SELECTED_OBJECTIVE_CANNOT_BE_RECONSTRUCTED")
+        if approval.get("operation") != "ModelOperatorInspection":
+            raise ValueError("APPROVAL_OPERATION_NOT_RUNNABLE")
+        # The runtime re-derives the same signed assembly and owns dispatch.
+        return self.run_approved(
+            {
+                "requestId": request_id,
+                "missionId": control["missionId"],
+                "taskId": control["taskId"],
+                "driverRunId": control["driverRunId"],
+                "authorityProfile": binding.get("authorityProfile") or {},
+            }, "",
+            response_mode="SPOCK",
+            requested_context_budget=int(binding.get("requestedContextBudget", 32_000)),
+            human_verification_required=bool(binding.get("humanVerificationRequired", True)),
+        )
+
     def run_approved(
         self,
         approval: Dict[str, Any],
@@ -441,6 +507,32 @@ class BotOperatorController:
             except Exception:
                 # A read failure is not evidence of an absent proposal.
                 result["proposalRecoveryUnavailable"] = True
+        # Only the current operator control and its authoritative approval
+        # stream can produce an actionable button. The global approvals list
+        # is an informational projection and cannot provide a DriverRun lease.
+        execution = result["execution"]
+        grant = execution.get("approvalRequestState") or {}
+        binding = (grant.get("scope") or {}).get("approvalBinding") or {}
+        fields = ("missionId", "taskId", "driverRunId")
+        if (grant and control.get("approvalRequestId") == grant.get("requestId")
+                and all(control.get(k) and control.get(k) == binding.get(k)
+                        for k in fields)
+                and all(grant.get(k) == control.get(k) for k in ("missionId", "taskId"))):
+            result["boundApproval"] = {
+                "requestId": grant["requestId"],
+                "missionId": control["missionId"],
+                "taskId": control["taskId"],
+                "driverRunId": control["driverRunId"],
+                "state": grant.get("state"),
+                "remainingUses": grant.get("remainingUses"),
+                "consumedAt": grant.get("consumedAt"),
+                "expiresAt": grant.get("expiresAt"),
+                "riskClassification": grant.get("riskClassification"),
+                "operation": grant.get("operation"),
+                "targetRoot": binding.get("targetRoot"),
+                "provider": binding.get("provider"),
+                "model": binding.get("model"),
+            }
         for key, op in (("missions", "missions"), ("tasks", "tasks"), ("approvals", "approvals")):
             try:
                 result[key] = self._query(op, limit=1000 if key != "approvals" else 100)

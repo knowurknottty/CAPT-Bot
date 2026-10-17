@@ -269,3 +269,33 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
 
 .workflow-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .workflow-actions button { justify-self: auto; }
+
+
+/* Scroll ownership: bound each desktop grid row to the viewport and let the
+   conversation, Kanban and inspector scroll independently. Without height on
+   the shell, its 1fr row grows with content while body overflow:hidden traps
+   all wheel/trackpad scrolling. */
+@media (min-width: 761px) {
+  html, body { height: 100%; }
+  body { overflow: hidden; }
+  .shell { height: 100dvh; min-height: 0; overflow: hidden; }
+  .rail { height: 100dvh; min-height: 0; min-width: 0; }
+  .rail-left { overflow-y: auto; overscroll-behavior-y: contain; }
+  .rail-right { min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
+  .workspace { height: 100dvh; min-height: 0; overflow: hidden; }
+  .workspace > .conversation, .workspace > .kanban-view {
+    min-height: 0; overflow-y: auto; overscroll-behavior-y: contain;
+  }
+}
+@media (max-width: 760px) {
+  html, body { min-height: 100%; height: auto; }
+  body { overflow-y: auto; overflow-x: hidden; }
+  .shell { min-height: 100dvh; height: auto; overflow: visible; }
+  .workspace { min-height: 100dvh; height: 100dvh; overflow: hidden; }
+  .workspace > .conversation, .workspace > .kanban-view {
+    min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .rail-left, .rail-right { height: 100dvh; max-height: 100dvh; overflow-y: auto; }
+}
+.execution-start { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+.execution-note { color: var(--muted); font-size: 12px; line-height: 1.5; }
