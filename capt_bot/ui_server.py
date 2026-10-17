@@ -26,12 +26,31 @@ class CoreRuntimePort:
         from desktop.desktop_runtime_client import RuntimeClient
 
         self._socket_lock = threading.RLock()
+        self._runtime_client_type = RuntimeClient
+        self._sock_path = sock_path
+        self._token_file = token_file
         self.client = RuntimeClient(sock_path, token_file, command_timeout=None)
+        self.identity = self.client.connect()
+
+    def _reconnect(self) -> None:
+        try:
+            self.client.disconnect()
+        except Exception:
+            pass
+        self.client = self._runtime_client_type(
+            self._sock_path, self._token_file, command_timeout=None
+        )
         self.identity = self.client.connect()
 
     def query(self, request: Dict[str, Any]) -> Dict[str, Any]:
         with self._socket_lock:
-            return self.client._query(request)["result"]
+            try:
+                return self.client._query(request)["result"]
+            except (OSError, EOFError, ConnectionError):
+                # Queries are read-only. Reconnect once after service rotation.
+                # Never silently replay a consequential command.
+                self._reconnect()
+                return self.client._query(request)["result"]
 
     def command(self, op: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         # Keep Bot registration repeatable across HTTP timeouts without
@@ -114,6 +133,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
             if self.path == "/app.js":
                 self._send_static("app.js", "text/javascript; charset=utf-8")
                 return
+            if self.path == "/kanban.js":
+                self._send_static("kanban.js", "text/javascript; charset=utf-8")
+                return
             if self.path == "/styles.css":
                 self._send_static("styles.css", "text/css; charset=utf-8")
                 return
@@ -122,6 +144,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
                 return
             if self.path == "/api/snapshot":
                 self._send_json(HTTPStatus.OK, self.controller.snapshot())
+                return
+            if self.path == "/api/kanban":
+                self._send_json(HTTPStatus.OK, self.controller.kanban())
                 return
             if self.path == "/api/bots":
                 self._send_json(HTTPStatus.OK, self.controller.bots())
@@ -160,6 +185,7 @@ class BotUiHandler(BaseHTTPRequestHandler):
                     basis=str(body.get("basis") or "proposed"),
                     edited_prompt=str(body.get("editedPrompt") or ""),
                     as_mission=bool(body.get("asMission", False)),
+                    existing_mission_id=str(body.get("existingMissionId") or "") or None,
                     requested_execution_seconds=int(body.get("requestedExecutionSeconds", 1800)),
                 )
 
@@ -171,6 +197,11 @@ class BotUiHandler(BaseHTTPRequestHandler):
                     primary_model=str(body["primaryModel"]) if body.get("primaryModel") else None,
                     default_runtime=str(body.get("defaultRuntime") or "either"),
                     cloud_allowed=body.get("cloudAllowed") is True,
+                )
+            elif self.path == "/api/task/cancel":
+                result = self.controller.cancel_task(
+                    str(body.get("taskId") or ""),
+                    str(body.get("reason") or "Kanban operator cancellation"),
                 )
             elif self.path == "/api/approval/decide":
                 result = self.controller.decide_approval(

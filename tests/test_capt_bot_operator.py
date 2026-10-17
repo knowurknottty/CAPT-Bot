@@ -32,10 +32,20 @@ class FakeRuntime:
         if op == "operator_proposal_get":
             return {"control": dict(self.control_state), "proposal": dict(self.proposal)}
         if op == "get_state":
-            return {"state": "awaiting_verification"}
+            stream = request["streamId"]
+            if stream.startswith("mission-"):
+                return {"missionId": stream[8:], "state": "authorized"}
+            return {"taskId": stream[5:], "state": "awaiting_verification"}
         if op == "bots":
             return {"bots": [{"botId": "issue-steward", "displayName": "Issue Steward", "roleKind": "crew"}]}
-        if op in {"operator_execution_state", "missions", "tasks", "approvals"}:
+        if op == "missions":
+            return {"missions": [{"missionId":"m-1", "state":"authorized"}],
+                    "count": 1, "countsByState": {"authorized": 1}}
+        if op == "tasks":
+            return {"tasks": [{"taskId":"t-1", "missionId":"m-1",
+                               "title":"Recovery", "state":"awaiting_verification"}],
+                    "count": 1, "countsByState": {"awaiting_verification":1}}
+        if op in {"operator_execution_state", "approvals"}:
             return []
         raise AssertionError("unexpected query " + op)
 
@@ -66,6 +76,8 @@ class FakeRuntime:
             }}
         if op == "submit_approval_decision":
             return {"status": "accepted", "result": {"requestId": payload["requestId"]}}
+        if op == "cancel_task":
+            return {"status": "accepted", "result": {"taskId": payload["taskId"]}}
         raise AssertionError("unexpected command " + op)
 
 def test_developer_mode_forces_software_development_submission():
@@ -180,3 +192,36 @@ def test_bot_registration_rejects_invalid_and_unsafe_identity():
         controller.register_bot(bot_id="bot-a", display_name="X", role="review",
                                 default_runtime="unrestricted")
     assert runtime.calls == []
+
+def test_kanban_inventory_is_runtime_projection_only():
+    runtime = FakeRuntime()
+    controller = BotOperatorController(runtime)
+    projection = controller.kanban()
+    assert projection["missionCount"] == 1
+    assert projection["taskCount"] == 1
+    assert projection["missions"][0]["missionId"] == "m-1"
+    assert projection["tasks"][0]["state"] == "awaiting_verification"
+    assert runtime.calls == []
+
+
+def test_kanban_continuation_reuses_authorized_mission():
+    runtime = FakeRuntime()
+    runtime.proposal["compilationStatus"] = "ready_for_approval"
+    controller = BotOperatorController(runtime)
+    result = controller.select_proposal("pp-1", existing_mission_id="m-1")
+    assert result["missionId"] == "m-1"
+    assert not any(op == "create_mission" for op, _ in runtime.calls)
+    operation, payload = runtime.calls[-1]
+    assert operation == "operator_proposal_select"
+    assert payload["missionId"] == "m-1"
+    assert "taskId" not in payload
+
+
+def test_kanban_task_cancel_never_mutates_mission_or_fabricates_verification():
+    runtime = FakeRuntime()
+    controller = BotOperatorController(runtime)
+    result = controller.cancel_task("t-1", "operator reviewed")
+    assert result["status"] == "accepted"
+    assert runtime.calls == [
+        ("cancel_task", {"taskId": "t-1", "reason": "operator reviewed"})
+    ]

@@ -54,6 +54,34 @@
         <div id="messages" class="messages" aria-live="polite"></div>
       </section>
 
+      <section class="kanban-view" id="kanbanView" hidden>
+        <div class="kanban-heading">
+          <div><p class="eyebrow">Mission governance</p><h2>Review / continue / cancel</h2>
+            <p class="kanban-description">RuntimeService owns the truth. Cancelling a task never deletes its event history or silently completes its mission.</p></div>
+          <button class="secondary" id="reloadKanban">Refresh board</button>
+        </div>
+        <div class="kanban-controls">
+          <input id="kanbanSearch" placeholder="Filter by mission ID or task description" aria-label="Search missions">
+          <select id="kanbanFilter" aria-label="Mission category">
+            <option value="all">All open missions</option>
+            <option value="review">Verification review</option>
+            <option value="paused">Suspended</option>
+            <option value="queued">Queued / authorized</option>
+            <option value="terminal">Terminal archive</option>
+          </select>
+          <span id="kanbanSummary" class="kanban-count">Loading…</span>
+        </div>
+        <div class="kanban-layout">
+          <div id="kanbanCards" class="kanban-cards" aria-live="polite"></div>
+          <aside class="kanban-detail">
+            <h3 id="kanbanDetailTitle">Select a mission</h3>
+            <p id="kanbanDetailNote">Review tasks and evidence before any decision.</p>
+            <div id="kanbanTaskList"></div>
+            <button id="kanbanContinue" class="secondary full" disabled>Prepare continuation</button>
+          </aside>
+        </div>
+      </section>
+
       <section class="composer-zone">
         <div class="mode-strip">
           <label class="toggle"><input type="checkbox" id="developerMode"><span></span>Developer</label>
@@ -154,5 +182,6 @@
   </dialog>
 
   <script src="/app.js"></script>
+  <script src="/kanban.js"></script>
 </body>
 </html>

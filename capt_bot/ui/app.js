@@ -6,6 +6,7 @@ const state = {
   approval: null,
   clarificationFor: null,
   missionOnSubmit: false,
+  continuationMissionId: null,
   selectedObjective: "",
   currentRun: null,
   snapshot: null,
@@ -276,12 +277,14 @@ async function selectProposal(basis) {
       body: JSON.stringify({
         proposalId: state.proposal.proposalId,
         basis,
-        asMission: state.missionOnSubmit || $("missionMode").checked,
+        asMission: !state.continuationMissionId && (state.missionOnSubmit || $("missionMode").checked),
+        existingMissionId: state.continuationMissionId,
         requestedExecutionSeconds: 1800,
       }),
     });
     const approval = result.selection?.result?.approval || result.selection?.approval;
     state.selectedObjective = result.selectedObjective || "";
+    state.continuationMissionId = null;
     if (approval) renderApproval(approval);
     if (result.missionId) {
       addMessage(
@@ -395,6 +398,7 @@ async function newThread() {
     state.approval = null;
     state.clarificationFor = null;
     state.missionOnSubmit = false;
+    state.continuationMissionId = null;
     state.selectedObjective = "";
     renderReview(null);
     $("messages").replaceChildren();

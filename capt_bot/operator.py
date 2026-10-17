@@ -181,6 +181,7 @@ class BotOperatorController:
         basis: str = "proposed",
         edited_prompt: str = "",
         as_mission: bool = False,
+        existing_mission_id: Optional[str] = None,
         requested_execution_seconds: int = 1800,
     ) -> Dict[str, Any]:
         projected = self._query("operator_proposal_get", proposalId=proposal_id)
@@ -194,6 +195,13 @@ class BotOperatorController:
         mission_receipt = None
         mission_id = None
         task_id = None
+        if existing_mission_id:
+            if as_mission:
+                raise ValueError("cannot create a new Mission while continuing an existing one")
+            existing = self._query("get_state", streamId="mission-" + existing_mission_id)
+            if existing.get("state") not in ("authorized", "executing"):
+                raise ValueError("existing Mission is not authorized for a successor task")
+            mission_id = existing_mission_id
         if as_mission:
             mission_id = "goal-" + uuid.uuid4().hex[:20]
             criteria = list(
@@ -242,7 +250,8 @@ class BotOperatorController:
         }
         if mission_id:
             select_payload["missionId"] = mission_id
-            select_payload["taskId"] = task_id
+            if task_id:
+                select_payload["taskId"] = task_id
         selected = self._command("operator_proposal_select", select_payload)
         if basis == "proposed":
             selected_objective = str(proposal["proposedPrompt"])
@@ -335,6 +344,34 @@ class BotOperatorController:
             "requestId": request_id,
             "decision": decision,
             "note": note,
+        })
+
+    def kanban(self) -> Dict[str, Any]:
+        """Complete, read-only mission/task inventory for reviewed operator decisions."""
+        missions = self._query("missions", limit=1000)
+        tasks = self._query("tasks", limit=1000)
+        return {
+            "missions": missions.get("missions", []),
+            "tasks": tasks.get("tasks", []),
+            "countsByMissionState": missions.get("countsByState", {}),
+            "countsByTaskState": tasks.get("countsByState", {}),
+            "missionCount": missions.get("count", 0),
+            "taskCount": tasks.get("count", 0),
+            "note": "Only RuntimeService state is authoritative. Cancellation never deletes events.",
+        }
+
+    def cancel_task(self, task_id: str, reason: str) -> Dict[str, Any]:
+        """Cancel one named task via the existing governed RuntimeService command."""
+        if not task_id:
+            raise ValueError("taskId required")
+        task = self._query("get_state", streamId="task-" + task_id)
+        if task.get("taskId") != task_id:
+            raise ValueError("task identity mismatch")
+        if task.get("state") in ("succeeded", "failed", "cancelled"):
+            raise ValueError("task already terminal")
+        return self._command("cancel_task", {
+            "taskId": task_id,
+            "reason": reason.strip() or "Operator requested task cancellation in CAPT-Bot Kanban.",
         })
 
     def snapshot(self) -> Dict[str, Any]:
