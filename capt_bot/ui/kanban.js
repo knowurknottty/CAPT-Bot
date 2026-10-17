@@ -44,6 +44,7 @@ function showMission(id) {
   $("kanbanComplete").disabled = mission.state !== "executing";
   $("kanbanReconcile").disabled = mission.state !== "authorized";
   $("kanbanCancel").disabled = terminalMissionStates.has(mission.state);
+  $("kanbanRevoke").disabled = terminalMissionStates.has(mission.state);
   $("kanbanDetailTitle").textContent = mission.missionId;
   const linked = missionTasks(id);
   const statuses = Object.entries(mission.taskStates || {}).map(([k,v]) => k + ": " + v).join(" · ");
@@ -187,8 +188,11 @@ async function reviewMissionDisposition(target) {
       " · " + preview.tasks.length + " tasks · " + preview.approvals.length +
       " approvals · " + preview.driverRuns.length + " driver runs" +
       " · " + preview.acceptedClaimCount + " accepted claims" +
+      (target === "cancel_revoke" ? " · REVOKE " + preview.approvedRevocationCount +
+       " previously approved grants; originals remain in the event history" : "") +
       (blockerText ? " · BLOCKED: " + blockerText : " · ready for explicit confirmation");
-    $("dispositionCommit").textContent = target === "cancel" ?
+    $("dispositionCommit").textContent = target === "cancel_revoke" ? "Confirm revocation" :
+      target === "cancel" ?
       "Confirm cancellation" : target === "complete" ? "Confirm completion" :
       target === "reconcile_complete" ? "Confirm reconciliation" : "Confirm authorization";
     updateDispositionConfirmation();
@@ -239,6 +243,7 @@ $("kanbanAuthorize").addEventListener("click", () => reviewMissionDisposition("a
 $("kanbanComplete").addEventListener("click", () => reviewMissionDisposition("complete"));
 $("kanbanReconcile").addEventListener("click", () => reviewMissionDisposition("reconcile_complete"));
 $("kanbanCancel").addEventListener("click", () => reviewMissionDisposition("cancel"));
+$("kanbanRevoke").addEventListener("click", () => reviewMissionDisposition("cancel_revoke"));
 $("dispositionAbort").addEventListener("click", () => {
   board.dispositionPreview = null;
   $("dispositionReview").hidden = true;

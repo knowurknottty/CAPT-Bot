@@ -384,7 +384,7 @@ class BotOperatorController:
 
     def preview_mission_disposition(self, mission_id: str, target: str) -> Dict[str, Any]:
         """Read-only mission review; the version/digest are minted by Core."""
-        if not mission_id or target not in ("authorize", "cancel", "complete", "reconcile_complete"):
+        if not mission_id or target not in ("authorize", "cancel", "cancel_revoke", "complete", "reconcile_complete"):
             raise ValueError("mission disposition target invalid")
         return self._query("mission_disposition_preview", missionId=mission_id, target=target)
 
@@ -395,7 +395,7 @@ class BotOperatorController:
         """Only an authenticated RuntimeService operator may commit this action."""
         if confirmed_mission_id != mission_id:
             raise ValueError("typed mission confirmation does not match")
-        if target not in ("authorize", "cancel", "complete", "reconcile_complete"):
+        if target not in ("authorize", "cancel", "cancel_revoke", "complete", "reconcile_complete"):
             raise ValueError("mission disposition target invalid")
         if not preview_digest.startswith("sha256:"):
             raise ValueError("review digest required")

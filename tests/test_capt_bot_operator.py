@@ -255,3 +255,14 @@ def test_mission_disposition_requires_explicit_review_confirmation():
     assert op=="mission_disposition"
     assert payload["confirmedMissionId"]=="m-1"
     assert payload["expectedVersion"]==1
+
+def test_kanban_revocation_requires_typed_reviewed_mission_confirmation():
+    import pytest
+    runtime=FakeRuntime()
+    controller=BotOperatorController(runtime)
+    plan=controller.preview_mission_disposition("m-1","cancel_revoke")
+    with pytest.raises(ValueError,match="typed mission"):
+        controller.apply_mission_disposition("m-1","cancel_revoke",1,plan["previewDigest"],"wrong","review")
+    receipt=controller.apply_mission_disposition("m-1","cancel_revoke",1,plan["previewDigest"],"m-1","review")
+    assert receipt["status"]=="accepted"
+    assert runtime.calls[-1][1]["target"]=="cancel_revoke"
