@@ -266,3 +266,35 @@ def test_kanban_revocation_requires_typed_reviewed_mission_confirmation():
     receipt=controller.apply_mission_disposition("m-1","cancel_revoke",1,plan["previewDigest"],"m-1","review")
     assert receipt["status"]=="accepted"
     assert runtime.calls[-1][1]["target"]=="cancel_revoke"
+
+
+def test_ui_read_only_query_recovers_not_connected_without_replaying_commands():
+    import threading
+    from capt_bot.ui_server import CoreRuntimePort
+
+    class Stale:
+        def _query(self, value):
+            raise RuntimeError("not connected")
+        def disconnect(self):
+            pass
+
+    class Fresh:
+        def __init__(self, *args, **kwargs):
+            self.commands = []
+        def connect(self):
+            return {"integrity": "ok"}
+        def _query(self, value):
+            return {"result": {"reconnected": True, "operation": value["op"]}}
+        def command(self, *args, **kwargs):
+            self.commands.append((args, kwargs))
+
+    port = CoreRuntimePort.__new__(CoreRuntimePort)
+    port._socket_lock = threading.RLock()
+    port._runtime_client_type = Fresh
+    port._sock_path = "unused.sock"
+    port._token_file = "unused.token"
+    port.client = Stale()
+    out = port.query({"op": "missions"})
+    assert out == {"reconnected": True, "operation": "missions"}
+    assert port.identity["integrity"] == "ok"
+    assert port.client.commands == []

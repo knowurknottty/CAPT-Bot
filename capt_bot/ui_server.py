@@ -46,9 +46,13 @@ class CoreRuntimePort:
         with self._socket_lock:
             try:
                 return self.client._query(request)["result"]
-            except (OSError, EOFError, ConnectionError):
-                # Queries are read-only. Reconnect once after service rotation.
-                # Never silently replay a consequential command.
+            except (OSError, EOFError, ConnectionError, RuntimeError) as exc:
+                # The runtime client raises RuntimeClientError("not connected")
+                # after its socket is severed by service rotation. Only that
+                # exact state and transport failures may trigger a read retry.
+                # Never retry a rejected query or a consequential command.
+                if isinstance(exc, RuntimeError) and str(exc) != "not connected":
+                    raise
                 self._reconnect()
                 return self.client._query(request)["result"]
 
