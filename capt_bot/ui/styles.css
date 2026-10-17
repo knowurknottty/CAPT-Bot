@@ -226,3 +226,43 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
 .disposition-review label {font-size:12px;display:block;margin:12px 0 6px;}
 .disposition-review input {width:100%;padding:9px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);}
 .disposition-review button {margin-top:9px;margin-right:5px;}
+
+
+/* Evidence-first mission handoff, restrained and non-game-like. */
+[hidden] { display: none !important; }
+.archive-link { margin-top: 10px; text-align: start; font-size: 12px; color: var(--dominant); }
+.rail-empty { color: var(--muted); font-size: 12px; line-height: 1.55; padding: 8px 6px; margin: 0; }
+.mission-card { width: 100%; text-align: start; border-top: 0; border-right: 0; border-bottom: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.mission-card:hover, .mission-card:focus-visible { background: var(--quiet-2); }
+.workflow-ribbon {
+  max-width: 820px; margin: 0 auto 24px; border: 1px solid var(--line);
+  background: var(--quiet); border-radius: 12px; padding: 16px;
+  display: grid; gap: 12px;
+}
+.workflow-ribbon strong { font-size: 14px; overflow-wrap: anywhere; }
+.workflow-ribbon p:not(.eyebrow) { color: var(--muted); line-height: 1.5; font-size: 12px; margin: 6px 0 0; }
+.workflow-ribbon button { justify-self: start; }
+.workflow-steps { padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; list-style: none; }
+.workflow-steps li { border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 12px; color: var(--muted); }
+.workflow-steps li.current { color: var(--ink); border-color: var(--dominant); }
+.workflow-steps li.done { color: var(--reward); }
+.mission-recovery {
+  margin: 10px 0; border: 1px solid var(--dominant); border-radius: 12px;
+  padding: 14px; background: var(--quiet); max-height: 310px; overflow-y: auto;
+}
+.mission-recovery h4 { margin: 0 0 9px; font-size: 13px; }
+.mission-recovery h5 { margin: 14px 0 6px; font-size: 12px; }
+.mission-recovery p { font-size: 12px; color: var(--muted); line-height: 1.55; overflow-wrap: anywhere; }
+.mission-recovery strong { color: var(--ink); }
+.mission-recovery a { color: var(--dominant); overflow-wrap: anywhere; }
+.recovery-evidence { border-top: 1px solid var(--line); margin-top: 12px; }
+.recovery-issues p { margin: 6px 0; }
+.kanban-empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; grid-column: 1 / -1; color: var(--muted); }
+.kanban-empty h3 { color: var(--ink); font-size: 18px; margin: 0 0 10px; }
+.kanban-empty p { line-height: 1.6; }
+.kanban-empty button { margin-top: 12px; }
+.kanban-detail #kanbanInspect, .kanban-detail #kanbanContinue { margin-block: 7px; }
+@media(max-width: 600px) {
+  .workflow-ribbon { padding: 12px; }
+  .workflow-steps li { flex: 1 0 26%; text-align: center; }
+}

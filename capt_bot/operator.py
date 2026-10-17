@@ -382,6 +382,10 @@ class BotOperatorController:
             "note": "Only RuntimeService state is authoritative. Cancellation never deletes events.",
         }
 
+    def inspect_mission(self, mission_id: str) -> Dict[str, Any]:
+        from .mission_recovery import inspect_mission
+        return inspect_mission(self, mission_id)
+
     def preview_mission_disposition(self, mission_id: str, target: str) -> Dict[str, Any]:
         """Read-only mission review; the version/digest are minted by Core."""
         if not mission_id or target not in ("authorize", "cancel", "cancel_revoke", "complete", "reconcile_complete"):
@@ -422,13 +426,24 @@ class BotOperatorController:
         })
 
     def snapshot(self) -> Dict[str, Any]:
+        control = self.control()
         result: Dict[str, Any] = {
-            "control": self.control(),
+            "control": control,
             "execution": self._query("operator_execution_state"),
         }
+        if control.get("proposalId"):
+            try:
+                projected = self._query("operator_proposal_get",
+                                        proposalId=control["proposalId"])
+                proposal = projected.get("proposal")
+                if isinstance(proposal, dict) and proposal.get("state") == "active":
+                    result["pendingProposal"] = proposal
+            except Exception:
+                # A read failure is not evidence of an absent proposal.
+                result["proposalRecoveryUnavailable"] = True
         for key, op in (("missions", "missions"), ("tasks", "tasks"), ("approvals", "approvals")):
             try:
-                result[key] = self._query(op)
+                result[key] = self._query(op, limit=1000 if key != "approvals" else 100)
             except Exception as exc:
                 result[key] = {"error": str(exc)}
         return result

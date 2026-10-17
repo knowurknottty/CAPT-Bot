@@ -26,8 +26,9 @@
         <div id="botList" class="mission-list" aria-live="polite">Loading…</div>
       </div>
       <div class="rail-section">
-        <p class="eyebrow">Active goals</p>
+        <p class="eyebrow">Active goals <span id="activeGoalCount"></span></p>
         <div id="missionList" class="mission-list"></div>
+        <button class="quiet-button archive-link" id="openMissionArchive">Browse historical missions</button>
       </div>
       <div class="rail-footer">
         <button class="quiet-button" id="openConfig">Runtime configuration</button>
@@ -51,13 +52,23 @@
           <h2>Describe the work at human resolution.</h2>
           <p>Developer mode turns a simple software request into a governed OMNI → META → FORGE → SIGMA execution contract before anything runs.</p>
         </div>
+        <section class="workflow-ribbon" id="workflowRibbon" hidden aria-live="polite">
+          <div><p class="eyebrow">Governed work process</p><strong id="workflowOrigin"></strong>
+            <p id="workflowStatus">Evidence review</p></div>
+          <ol id="workflowSteps" class="workflow-steps">
+            <li data-step="evidence">Evidence</li><li data-step="scope">Scope</li>
+            <li data-step="compile">Compile</li><li data-step="approval">Approval</li>
+            <li data-step="execute">Execute</li><li data-step="verify">Verify</li>
+          </ol>
+          <button class="secondary" id="workflowBackToEvidence">View predecessor receipts</button>
+        </section>
         <div id="messages" class="messages" aria-live="polite"></div>
       </section>
 
       <section class="kanban-view" id="kanbanView" hidden>
         <div class="kanban-heading">
           <div><p class="eyebrow">Mission governance</p><h2>Review / continue / cancel</h2>
-            <p class="kanban-description">RuntimeService owns the truth. Cancelling a task never deletes its event history or silently completes its mission.</p></div>
+            <p class="kanban-description">Open work first. Historical missions stay in the searchable archive; a cancelled mission can only produce a newly reviewed successor, never a silent restart.</p></div>
           <button class="secondary" id="reloadKanban">Refresh board</button>
         </div>
         <div class="kanban-controls">
@@ -77,7 +88,14 @@
             <h3 id="kanbanDetailTitle">Select a mission</h3>
             <p id="kanbanDetailNote">Review tasks and evidence before any decision.</p>
             <div id="kanbanTaskList"></div>
-            <button id="kanbanContinue" class="secondary full" disabled>Prepare continuation</button>
+            <button id="kanbanInspect" class="secondary full" disabled>Inspect receipts &amp; next step</button>
+            <section id="missionRecovery" class="mission-recovery" hidden aria-live="polite">
+              <h4>Provenance &amp; continuation plan</h4>
+              <p id="missionRecoverySummary">Loading authoritative evidence…</p>
+              <div id="missionRecoveryEvidence" class="recovery-evidence"></div>
+              <div id="missionRecoveryIssues" class="recovery-issues"></div>
+            </section>
+            <button id="kanbanContinue" class="primary full" disabled>Draft a governed next step</button>
             <div class="disposition-actions" id="dispositionActions">
               <button id="kanbanAuthorize" class="secondary" disabled>Authorize draft</button>
               <button id="kanbanComplete" class="secondary" disabled>Complete verified</button>

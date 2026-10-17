@@ -11,6 +11,8 @@ const state = {
   currentRun: null,
   snapshot: null,
   busy: false,
+  recoveryMissionId: null,
+  workflowPhase: null,
 };
 
 async function api(path, options = {}) {
@@ -146,20 +148,51 @@ function renderApproval(approval) {
 }
 
 function renderMissions(snapshot) {
-  const missions = rows(snapshot?.missions);
+  const missions = rows(snapshot?.missions).filter(mission =>
+    !["completed", "failed", "cancelled"].includes(mission.state)
+  );
   $("missionList").replaceChildren();
-  for (const mission of missions.slice(0, 20)) {
-    const card = document.createElement("div");
-    card.className = "mission-card";
-    if (!["completed", "failed", "cancelled"].includes(mission.state)) card.classList.add("active");
+  $("activeGoalCount").textContent = "(" + missions.length + ")";
+  if (!missions.length) {
+    const empty = document.createElement("p");
+    empty.className = "rail-empty";
+    empty.textContent = "No active goals. Finished work is preserved in the archive.";
+    $("missionList").append(empty);
+    return;
+  }
+  for (const mission of missions.slice(0, 40)) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "mission-card active";
     const title = document.createElement("strong");
-    title.textContent = mission.objective || mission.rawRequest || mission.missionId || "Mission";
+    title.textContent = mission.missionId || "Mission";
     const meta = document.createElement("span");
-    meta.textContent = `${mission.state || "unknown"} · ${mission.missionId || ""}`;
+    meta.textContent = mission.state || "unknown";
     card.append(title, meta);
+    card.addEventListener("click", () => {
+      $("kanbanFilter").value = "all";
+      $("kanbanSearch").value = mission.missionId;
+      boardView("goals");
+      refreshKanban().then(() => showMission(mission.missionId));
+    });
     $("missionList").append(card);
   }
 }
+
+const WORKFLOW_PHASES = ["evidence", "scope", "compile", "approval", "execute", "verify"];
+function updateWorkflow(phase, message, origin) {
+  state.workflowPhase = phase;
+  $("workflowRibbon").hidden = false;
+  $("workflowOrigin").textContent = origin || state.recoveryMissionId || "New governed work";
+  $("workflowStatus").textContent = message;
+  const at = WORKFLOW_PHASES.indexOf(phase);
+  for (const item of $("workflowSteps").querySelectorAll("li")) {
+    const n = WORKFLOW_PHASES.indexOf(item.dataset.step);
+    item.classList.toggle("done", at > n);
+    item.classList.toggle("current", at === n);
+  }
+}
+
 
 function renderReview(run) {
   state.currentRun = run || null;
@@ -235,6 +268,15 @@ async function refresh() {
   try {
     const snapshot = await api("/api/snapshot");
     renderRuntime(snapshot);
+    if (!state.proposal && snapshot.pendingProposal && !state.busy) {
+      renderProposal(snapshot.pendingProposal);
+      updateWorkflow(
+        snapshot.pendingProposal.compilationStatus === "clarification_required" ?
+          "scope" : "approval",
+        "Recovered live CAPT proposal from RuntimeService. Inspect the contract and continue through the approval gate."
+      );
+      addMessage("CAPT · recovered", "A pending governed proposal was restored from RuntimeService. No execution was replayed.", "capt");
+    }
     const bots = await api("/api/bots");
     renderBots(bots);
   } catch (error) {
@@ -265,7 +307,11 @@ async function sendPrompt() {
     const proposal = result.proposal || result;
     state.missionOnSubmit = $("missionMode").checked;
     renderProposal(proposal);
+    if ((proposal.compilationStatus || proposal.status) === "clarification_required") {
+      updateWorkflow("scope", "Clarification is required. Answer the question in the composer to revise this exact proposal.");
+    }
     if ((proposal.compilationStatus || proposal.status) !== "clarification_required") {
+      updateWorkflow("approval", "Compiled prompt ready: inspect the SDR and select a basis before requesting approval.");
       addMessage(
         "CAPT",
         "Prompt compilation is ready for review. Inspect the transformed contract before approval.",
@@ -310,6 +356,7 @@ async function selectProposal(basis) {
     } else {
       addMessage("CAPT", "Selected prompt is bound to an approval request.", "capt");
     }
+    updateWorkflow("approval", "Prompt selection recorded. Review the exact bound approval before any model run.");
     await refresh();
   } catch (error) {
     addMessage("CAPT · error", error.message, "system");
@@ -329,6 +376,9 @@ async function decide(decision) {
       body: JSON.stringify({requestId, decision}),
     });
     addMessage("CAPT · approval", `${decision}: ${requestId}`, "capt");
+    updateWorkflow(decision === "approve" ? "execute" : "approval",
+      decision === "approve" ? "Bound one-use run admitted; awaiting result." :
+      "Approval denied. Re-scope before requesting new authority.");
     if (decision === "approve") {
       const run = await api("/api/run", {
         method: "POST",
@@ -341,6 +391,7 @@ async function decide(decision) {
       });
       const result = run.result || run;
       renderReview(result);
+      updateWorkflow("verify", "Inspect the run receipt and verify evidence. Completion is a separate mission decision.");
       const observation = (result.observations || [])[0]?.summary;
       addMessage(
         "CAPT · run",
@@ -372,6 +423,7 @@ async function reviewResult(disposition) {
     });
     const result = receipt.result || receipt;
     renderReview({...run, taskState: result.taskState || disposition});
+    updateWorkflow("verify", "Verification recorded. Inspect the mission board for evidence-bound closure.");
     addMessage(
       "CAPT · verification",
       `${disposition}: task ${result.taskState || "updated"}, mission ${result.missionState || "unchanged"}.`,
@@ -415,6 +467,9 @@ async function newThread() {
     state.missionOnSubmit = false;
     state.continuationMissionId = null;
     state.selectedObjective = "";
+    state.recoveryMissionId = null;
+    state.workflowPhase = null;
+    $("workflowRibbon").hidden = true;
     renderReview(null);
     $("messages").replaceChildren();
     $("welcome").hidden = false;
@@ -459,6 +514,18 @@ async function registerBot(event) {
   }
 }
 
+$("openMissionArchive").addEventListener("click", () => {
+  $("kanbanFilter").value = "terminal";
+  $("kanbanSearch").value = "";
+  boardView("goals");
+});
+$("workflowBackToEvidence").addEventListener("click", () => {
+  if (!state.recoveryMissionId) return;
+  $("kanbanSearch").value = state.recoveryMissionId;
+  $("kanbanFilter").value = "terminal";
+  boardView("goals");
+  refreshKanban().then(() => showMission(state.recoveryMissionId));
+});
 $("createBot").addEventListener("click", () => $("createBotDialog").showModal());
 $("closeBotDialog").addEventListener("click", () => $("createBotDialog").close());
 $("createBotForm").addEventListener("submit", registerBot);

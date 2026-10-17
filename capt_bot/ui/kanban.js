@@ -3,7 +3,7 @@
 // This is a projection and an operator decision surface, never a second
 // mission authority. Every mutation uses an existing RuntimeService command.
 const board = {missions: [], tasks: [], selected: null, dispositionPreview: null,
-  activeDriverRuns: [], unreconciledDriverRuns: []};
+  activeDriverRuns: [], unreconciledDriverRuns: [], recovery: null};
 const terminalTaskStates = new Set(["succeeded", "failed", "cancelled"]);
 const terminalMissionStates = new Set(["completed", "failed", "cancelled"]);
 
@@ -37,6 +37,15 @@ function showMission(id) {
   if (!mission) return;
   board.selected = mission;
   board.dispositionPreview = null;
+  board.recovery = null;
+  $("missionRecovery").hidden = true;
+  $("missionRecoveryEvidence").replaceChildren();
+  $("missionRecoveryIssues").replaceChildren();
+  $("kanbanInspect").disabled = false;
+  $("kanbanContinue").disabled = true;
+  $("kanbanContinue").textContent = terminalMissionStates.has(mission.state) ?
+    "Draft a successor goal" : "Plan governed continuation";
+  $("dispositionActions").hidden = terminalMissionStates.has(mission.state);
   $("dispositionReview").hidden = true;
   $("dispositionConfirm").value = "";
   $("dispositionCommit").disabled = true;
@@ -49,7 +58,9 @@ function showMission(id) {
   const linked = missionTasks(id);
   const statuses = Object.entries(mission.taskStates || {}).map(([k,v]) => k + ": " + v).join(" · ");
   note(mission.state + " · " + (statuses || "No linked tasks") +
-    ". Completion requires ClaimGuard acceptance; task cancellation does not close a mission.");
+    (terminalMissionStates.has(mission.state) ?
+      ". Historical receipt; this mission cannot resume. Inspect provenance to create a successor." :
+      ". Review blockers and evidence before approval or continuation."));
   const panel = $("kanbanTaskList");
   panel.replaceChildren();
   for (const t of linked) {
@@ -60,7 +71,7 @@ function showMission(id) {
     const p = document.createElement("p");
     p.textContent = t.state + " · " + t.taskId;
     card.append(h,p);
-    if (!terminalTaskStates.has(t.state)) {
+    if (!terminalMissionStates.has(mission.state) && !terminalTaskStates.has(t.state)) {
       const action = document.createElement("button");
       action.className = "deny";
       action.textContent = "Cancel this task";
@@ -69,7 +80,102 @@ function showMission(id) {
     }
     panel.append(card);
   }
-  $("kanbanContinue").disabled = !["authorized", "executing"].includes(mission.state);
+}
+
+
+async function inspectMissionRecovery() {
+  const selected = board.selected;
+  if (!selected) return;
+  const mid = selected.missionId;
+  const summary = $("missionRecoverySummary");
+  $("missionRecovery").hidden = false;
+  summary.textContent = "Reading EventStore and independent evidence…";
+  $("missionRecoveryEvidence").replaceChildren();
+  $("missionRecoveryIssues").replaceChildren();
+  $("kanbanInspect").disabled = true;
+  $("kanbanContinue").disabled = true;
+  try {
+    const recovery = await api("/api/mission/recovery?missionId=" + encodeURIComponent(mid));
+    if (board.selected?.missionId !== mid) return;
+    board.recovery = recovery;
+    const tasks = recovery.tasks || [];
+    const runCount = (recovery.driverRuns || []).length;
+    const approvalCount = (recovery.approvals || []).length;
+    const github = recovery.github;
+    summary.textContent = recovery.state.toUpperCase() + " · " +
+      tasks.length + " linked task(s), " + runCount + " DriverRun(s), " +
+      approvalCount + " approval(s). " + recovery.smallestNextStep;
+    const details = $("missionRecoveryEvidence");
+    for (const [label, value] of [
+      ["Runtime receipts", (recovery.missionEvents || []).length +
+        " mission events (metadata only), " + tasks.reduce((n,t)=>n+(t.receipts||[]).length,0) +
+        " task events"],
+      ["Authority", recovery.readAuthority],
+      ["Write / execution gate", recovery.withheldAuthority],
+      ["History", recovery.sourceBoundary],
+    ]) {
+      const entry = document.createElement("p");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      entry.append(strong, document.createTextNode(value));
+      details.append(entry);
+    }
+    const issues = $("missionRecoveryIssues");
+    if (github) {
+      const title = document.createElement("h5");
+      title.textContent = github.status === "ok" ?
+        github.openCount + " GitHub issues open · independent read-only inventory" :
+        "GitHub inventory unavailable: verify before decisions";
+      issues.append(title);
+      for (const issue of (github.issues || []).slice(0, 30)) {
+        const row = document.createElement("p");
+        const link = document.createElement("a");
+        link.href = issue.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "#" + issue.number + " · " + issue.title;
+        row.append(link);
+        issues.append(row);
+      }
+      const repos = document.createElement("p");
+      repos.textContent = (recovery.candidateInventory?.repositories || [])
+        .map(x => x.name + ": " + (x.exists ? "present" : "not found")).join(" · ");
+      issues.append(repos);
+    }
+    $("kanbanContinue").disabled = false;
+    $("kanbanContinue").textContent = recovery.continuableInPlace ?
+      "Draft reviewed continuation" : "Draft successor goal";
+  } catch (error) {
+    summary.textContent = "Read-only inspection unavailable: " + error.message +
+      ". No work was launched. Retry the review after restoring read access.";
+  } finally {
+    if (board.selected?.missionId === mid) $("kanbanInspect").disabled = false;
+  }
+}
+
+function draftReviewedNextStep() {
+  const recovery = board.recovery;
+  if (!recovery || board.selected?.missionId !== recovery.missionId) return;
+  const successor = !recovery.continuableInPlace;
+  state.recoveryMissionId = recovery.missionId;
+  state.continuationMissionId = successor ? null : recovery.missionId;
+  state.missionOnSubmit = successor;
+  $("missionMode").checked = successor;
+  $("promptInput").value = recovery.draft;
+  $("threadTitle").textContent = successor ? "New governed successor · review first" :
+    "Reviewed continuation · " + recovery.missionId;
+  $("composerNote").textContent = successor ?
+    "Draft only. Send to compile, inspect proposal, then explicitly approve a NEW mission and any separate execution authority." :
+    "Review of live predecessor required. Send to compile a new task; no old driver run is restarted automatically.";
+  boardView("chat");
+  updateWorkflow("scope", successor ?
+    "Predecessor is terminal. Review and edit the proposed scope before compiling a NEW goal." :
+    "Predecessor is active. Review and edit the next task before compiling the continuation.",
+    recovery.missionId);
+  addMessage("CAPT · provenance", recovery.state + " predecessor " +
+    recovery.missionId + ". " + recovery.sourceBoundary +
+    "\nNo new mission, approval or DriverRun has been created.", "capt");
+  $("promptInput").focus();
 }
 
 async function cancelKanbanTask(task) {
@@ -130,6 +236,29 @@ function renderKanban() {
     item.append(lane, heading, desc, controls);
     host.append(item);
   }
+  if (!matches.length) {
+    const empty = document.createElement("section");
+    empty.className = "kanban-empty";
+    const heading = document.createElement("h3");
+    heading.textContent = filter === "all" ? "No active missions" : "No missions match this view";
+    const copy = document.createElement("p");
+    copy.textContent = filter === "all" ?
+      "Live work is clear. Historical receipts are preserved in the archive." :
+      "Change your search or filter to inspect another mission.";
+    empty.append(heading, copy);
+    if (filter === "all") {
+      const browse = document.createElement("button");
+      browse.className = "secondary";
+      browse.textContent = "Browse terminal archive";
+      browse.addEventListener("click", () => {
+        $("kanbanFilter").value = "terminal";
+        $("kanbanSearch").value = "";
+        renderKanban();
+      });
+      empty.append(browse);
+    }
+    host.append(empty);
+  }
   if (matches.length > 130) {
     const more = document.createElement("p");
     more.textContent = "Showing 130 of " + matches.length + ". Search to narrow the review.";
@@ -152,21 +281,9 @@ async function refreshKanban() {
   }
 }
 
-$("kanbanContinue").addEventListener("click", () => {
-  const mission = board.selected;
-  if (!mission || !["authorized", "executing"].includes(mission.state)) return;
-  state.continuationMissionId = mission.missionId;
-  state.missionOnSubmit = false;
-  $("missionMode").checked = false;
-  const first = missionTasks(mission.missionId)[0];
-  $("promptInput").value = "Continue existing CAPT mission " + mission.missionId +
-    ". Review past outcomes and recover unfinished acceptance criteria. " +
-    (first?.title || "");
-  $("composerNote").textContent = "Continuing existing Mission " + mission.missionId +
-    ". A new task and one-use approval are required before execution.";
-  boardView("chat");
-  $("promptInput").focus();
-});
+$("kanbanInspect").addEventListener("click", inspectMissionRecovery);
+$("kanbanContinue").addEventListener("click", draftReviewedNextStep);
+
 async function reviewMissionDisposition(target) {
   const mission = board.selected;
   if (!mission || terminalMissionStates.has(mission.state)) return;
@@ -190,7 +307,9 @@ async function reviewMissionDisposition(target) {
       " · " + preview.acceptedClaimCount + " accepted claims" +
       (target === "cancel_revoke" ? " · REVOKE " + preview.approvedRevocationCount +
        " previously approved grants; originals remain in the event history" : "") +
-      (blockerText ? " · BLOCKED: " + blockerText : " · ready for explicit confirmation");
+      (blockerText ? " · BLOCKED: " + blockerText +
+        ". Use Inspect receipts & next step to prepare a scoped follow-up." :
+        " · ready for explicit confirmation");
     $("dispositionCommit").textContent = target === "cancel_revoke" ? "Confirm revocation" :
       target === "cancel" ?
       "Confirm cancellation" : target === "complete" ? "Confirm completion" :

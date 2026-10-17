@@ -14,6 +14,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict
+from urllib.parse import parse_qs, urlsplit
 
 from .operator import BotOperatorController
 
@@ -152,10 +153,19 @@ class BotUiHandler(BaseHTTPRequestHandler):
             if self.path == "/api/kanban":
                 self._send_json(HTTPStatus.OK, self.controller.kanban())
                 return
+            if urlsplit(self.path).path == "/api/mission/recovery":
+                args = parse_qs(urlsplit(self.path).query)
+                mids = args.get("missionId", [])
+                if len(mids) != 1:
+                    raise ValueError("one missionId required")
+                self._send_json(HTTPStatus.OK, self.controller.inspect_mission(mids[0]))
+                return
             if self.path == "/api/bots":
                 self._send_json(HTTPStatus.OK, self.controller.bots())
                 return
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
+        except ValueError as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         except Exception as exc:
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
 
