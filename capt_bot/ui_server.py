@@ -198,6 +198,18 @@ class BotUiHandler(BaseHTTPRequestHandler):
                     default_runtime=str(body.get("defaultRuntime") or "either"),
                     cloud_allowed=body.get("cloudAllowed") is True,
                 )
+            elif self.path == "/api/mission/disposition/preview":
+                result = self.controller.preview_mission_disposition(
+                    str(body.get("missionId") or ""), str(body.get("target") or "")
+                )
+            elif self.path == "/api/mission/disposition/apply":
+                result = self.controller.apply_mission_disposition(
+                    str(body.get("missionId") or ""), str(body.get("target") or ""),
+                    int(body.get("expectedVersion", -1)),
+                    str(body.get("previewDigest") or ""),
+                    str(body.get("confirmedMissionId") or ""),
+                    str(body.get("reason") or ""),
+                )
             elif self.path == "/api/task/cancel":
                 result = self.controller.cancel_task(
                     str(body.get("taskId") or ""),

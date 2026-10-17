@@ -2,7 +2,7 @@
 
 // This is a projection and an operator decision surface, never a second
 // mission authority. Every mutation uses an existing RuntimeService command.
-const board = {missions: [], tasks: [], selected: null};
+const board = {missions: [], tasks: [], selected: null, dispositionPreview: null};
 const terminalTaskStates = new Set(["succeeded", "failed", "cancelled"]);
 const terminalMissionStates = new Set(["completed", "failed", "cancelled"]);
 
@@ -35,6 +35,13 @@ function showMission(id) {
   const mission = board.missions.find(item => item.missionId === id);
   if (!mission) return;
   board.selected = mission;
+  board.dispositionPreview = null;
+  $("dispositionReview").hidden = true;
+  $("dispositionConfirm").value = "";
+  $("dispositionCommit").disabled = true;
+  $("kanbanAuthorize").disabled = mission.state !== "draft";
+  $("kanbanComplete").disabled = mission.state !== "executing";
+  $("kanbanCancel").disabled = terminalMissionStates.has(mission.state);
   $("kanbanDetailTitle").textContent = mission.missionId;
   const linked = missionTasks(id);
   const statuses = Object.entries(mission.taskStates || {}).map(([k,v]) => k + ": " + v).join(" · ");
@@ -154,6 +161,85 @@ $("kanbanContinue").addEventListener("click", () => {
   boardView("chat");
   $("promptInput").focus();
 });
+async function reviewMissionDisposition(target) {
+  const mission = board.selected;
+  if (!mission || terminalMissionStates.has(mission.state)) return;
+  board.dispositionPreview = null;
+  $("dispositionReview").hidden = false;
+  $("dispositionConfirm").value = "";
+  $("dispositionCommit").disabled = true;
+  $("dispositionSummary").textContent = "Fetching authoritative mission review…";
+  try {
+    const preview = await api("/api/mission/disposition/preview", {
+      method: "POST",
+      body: JSON.stringify({missionId: mission.missionId, target})
+    });
+    if (board.selected?.missionId !== mission.missionId) return;
+    board.dispositionPreview = preview;
+    const blockerText = (preview.blocked || []).join(", ");
+    $("dispositionSummary").textContent = target.toUpperCase() +
+      " · current: " + preview.currentState +
+      " · " + preview.tasks.length + " tasks · " + preview.approvals.length +
+      " approvals · " + preview.driverRuns.length + " driver runs" +
+      " · " + preview.acceptedClaimCount + " accepted claims" +
+      (blockerText ? " · BLOCKED: " + blockerText : " · ready for explicit confirmation");
+    $("dispositionCommit").textContent = target === "cancel" ?
+      "Confirm cancellation" : target === "complete" ? "Confirm completion" : "Confirm authorization";
+    updateDispositionConfirmation();
+  } catch(error) {
+    $("dispositionSummary").textContent = "Could not prepare review: " + error.message;
+  }
+}
+function updateDispositionConfirmation() {
+  const preview = board.dispositionPreview;
+  $("dispositionCommit").disabled = !preview ||
+    (preview.blocked || []).length > 0 ||
+    $("dispositionConfirm").value !== preview.missionId;
+}
+async function commitMissionDisposition() {
+  const preview = board.dispositionPreview;
+  if (!preview || $("dispositionCommit").disabled) return;
+  const button = $("dispositionCommit");
+  button.disabled = true;
+  try {
+    const receipt = await api("/api/mission/disposition/apply", {
+      method: "POST",
+      body: JSON.stringify({
+        missionId: preview.missionId,
+        target: preview.target,
+        expectedVersion: preview.expectedVersion,
+        previewDigest: preview.previewDigest,
+        confirmedMissionId: $("dispositionConfirm").value,
+        reason: "Explicit reviewed CAPT-Bot mission disposition; audit history retained."
+      }),
+    });
+    if (!["accepted", "idempotent"].includes(receipt.status)) {
+      throw new Error(receipt.error?.message || "Authoritative mission command refused");
+    }
+    await refreshKanban();
+    const mission = board.missions.find(m => m.missionId === preview.missionId);
+    if (mission) showMission(mission.missionId);
+    note("RuntimeService receipt: " + receipt.status +
+      " · state: " + (receipt.result?.missionState || "inspect ledger") +
+      " · events: " + (receipt.result?.settledEvents || 0));
+  } catch (error) {
+    $("dispositionSummary").textContent = "Not committed: " + error.message +
+      ". Refresh the review; no blind retry.";
+  } finally {
+    board.dispositionPreview = null;
+  }
+}
+$("kanbanAuthorize").addEventListener("click", () => reviewMissionDisposition("authorize"));
+$("kanbanComplete").addEventListener("click", () => reviewMissionDisposition("complete"));
+$("kanbanCancel").addEventListener("click", () => reviewMissionDisposition("cancel"));
+$("dispositionAbort").addEventListener("click", () => {
+  board.dispositionPreview = null;
+  $("dispositionReview").hidden = true;
+  $("dispositionConfirm").value = "";
+});
+$("dispositionConfirm").addEventListener("input", updateDispositionConfirmation);
+$("dispositionCommit").addEventListener("click", commitMissionDisposition);
+
 $("reloadKanban").addEventListener("click", refreshKanban);
 $("kanbanSearch").addEventListener("input", renderKanban);
 $("kanbanFilter").addEventListener("change", renderKanban);

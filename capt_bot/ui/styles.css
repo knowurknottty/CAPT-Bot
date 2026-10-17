@@ -217,3 +217,12 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
   .kanban-layout { grid-template-columns: 1fr; }
   .kanban-detail { position: static; }
 }
+
+.disposition-actions {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.disposition-actions button:last-child {grid-column:1 / -1;}
+.disposition-review {padding:13px;border:1px solid var(--line);border-radius:10px;margin-top:14px;}
+.disposition-review h4 {font-size:13px;margin:0 0 9px;}
+.disposition-review p {font-size:12px;color:var(--muted);line-height:1.55;}
+.disposition-review label {font-size:12px;display:block;margin:12px 0 6px;}
+.disposition-review input {width:100%;padding:9px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);}
+.disposition-review button {margin-top:9px;margin-right:5px;}

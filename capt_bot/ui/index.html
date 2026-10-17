@@ -78,6 +78,20 @@
             <p id="kanbanDetailNote">Review tasks and evidence before any decision.</p>
             <div id="kanbanTaskList"></div>
             <button id="kanbanContinue" class="secondary full" disabled>Prepare continuation</button>
+            <div class="disposition-actions" id="dispositionActions">
+              <button id="kanbanAuthorize" class="secondary" disabled>Authorize draft</button>
+              <button id="kanbanComplete" class="secondary" disabled>Complete verified</button>
+              <button id="kanbanCancel" class="deny" disabled>Cancel mission</button>
+            </div>
+            <section class="disposition-review" id="dispositionReview" hidden>
+              <h4>Mission disposition review</h4>
+              <p id="dispositionSummary">Inspect the authoritative scope before confirmation.</p>
+              <label for="dispositionConfirm">Type the exact mission ID to confirm</label>
+              <input id="dispositionConfirm" autocomplete="off" spellcheck="false"
+                     placeholder="Mission ID" aria-label="Type mission ID to confirm">
+              <button id="dispositionCommit" class="deny" disabled>Confirm disposition</button>
+              <button id="dispositionAbort" class="secondary">Discard review</button>
+            </section>
           </aside>
         </div>
       </section>

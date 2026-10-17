@@ -360,6 +360,31 @@ class BotOperatorController:
             "note": "Only RuntimeService state is authoritative. Cancellation never deletes events.",
         }
 
+    def preview_mission_disposition(self, mission_id: str, target: str) -> Dict[str, Any]:
+        """Read-only mission review; the version/digest are minted by Core."""
+        if not mission_id or target not in ("authorize", "cancel", "complete"):
+            raise ValueError("mission disposition target invalid")
+        return self._query("mission_disposition_preview", missionId=mission_id, target=target)
+
+    def apply_mission_disposition(
+        self, mission_id: str, target: str, expected_version: int,
+        preview_digest: str, confirmed_mission_id: str, reason: str,
+    ) -> Dict[str, Any]:
+        """Only an authenticated RuntimeService operator may commit this action."""
+        if confirmed_mission_id != mission_id:
+            raise ValueError("typed mission confirmation does not match")
+        if target not in ("authorize", "cancel", "complete"):
+            raise ValueError("mission disposition target invalid")
+        if not preview_digest.startswith("sha256:"):
+            raise ValueError("review digest required")
+        return self._command("mission_disposition", {
+            "missionId": mission_id, "target": target,
+            "expectedVersion": int(expected_version),
+            "previewDigest": preview_digest,
+            "confirmedMissionId": confirmed_mission_id,
+            "reason": reason.strip() or "Explicit reviewed CAPT-Bot Kanban disposition",
+        })
+
     def cancel_task(self, task_id: str, reason: str) -> Dict[str, Any]:
         """Cancel one named task via the existing governed RuntimeService command."""
         if not task_id:

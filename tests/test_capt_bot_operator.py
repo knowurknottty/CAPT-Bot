@@ -31,6 +31,10 @@ class FakeRuntime:
             return dict(self.control_state)
         if op == "operator_proposal_get":
             return {"control": dict(self.control_state), "proposal": dict(self.proposal)}
+        if op == "mission_disposition_preview":
+            return {"missionId":request["missionId"],"target":request["target"],
+                    "expectedVersion":1,"previewDigest":"sha256:"+"a"*64,"blocked":[],
+                    "tasks":[],"approvals":[],"driverRuns":[],"acceptedClaimCount":0}
         if op == "get_state":
             stream = request["streamId"]
             if stream.startswith("mission-"):
@@ -78,6 +82,8 @@ class FakeRuntime:
             return {"status": "accepted", "result": {"requestId": payload["requestId"]}}
         if op == "cancel_task":
             return {"status": "accepted", "result": {"taskId": payload["taskId"]}}
+        if op == "mission_disposition":
+            return {"status":"accepted","result":{"missionId":payload["missionId"],"missionState":"authorized"}}
         raise AssertionError("unexpected command " + op)
 
 def test_developer_mode_forces_software_development_submission():
@@ -225,3 +231,20 @@ def test_kanban_task_cancel_never_mutates_mission_or_fabricates_verification():
     assert runtime.calls == [
         ("cancel_task", {"taskId": "t-1", "reason": "operator reviewed"})
     ]
+
+def test_mission_disposition_requires_explicit_review_confirmation():
+    import pytest
+    runtime=FakeRuntime()
+    controller=BotOperatorController(runtime)
+    preview=controller.preview_mission_disposition("m-1","authorize")
+    assert preview["expectedVersion"]==1
+    assert runtime.calls==[]
+    with pytest.raises(ValueError,match="typed mission"):
+        controller.apply_mission_disposition("m-1","authorize",1,preview["previewDigest"],"wrong","reviewed")
+    assert runtime.calls==[]
+    receipt=controller.apply_mission_disposition("m-1","authorize",1,preview["previewDigest"],"m-1","reviewed")
+    assert receipt["status"]=="accepted"
+    op,payload=runtime.calls[-1]
+    assert op=="mission_disposition"
+    assert payload["confirmedMissionId"]=="m-1"
+    assert payload["expectedVersion"]==1
