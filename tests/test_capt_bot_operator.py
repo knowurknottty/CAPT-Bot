@@ -31,6 +31,8 @@ class FakeRuntime:
             return dict(self.control_state)
         if op == "operator_proposal_get":
             return {"control": dict(self.control_state), "proposal": dict(self.proposal)}
+        if op == "list_aggregates":
+            return [{"streamId": "driverrun-dr-test", "kind": "driverrun", "version": 2}]
         if op == "mission_disposition_preview":
             return {"missionId":request["missionId"],"target":request["target"],
                     "expectedVersion":1,"previewDigest":"sha256:"+"a"*64,"blocked":[],
@@ -39,6 +41,9 @@ class FakeRuntime:
             stream = request["streamId"]
             if stream.startswith("mission-"):
                 return {"missionId": stream[8:], "state": "authorized"}
+            if stream.startswith("driverrun-"):
+                return {"driverRunId": stream[10:], "missionId": "m-1",
+                        "state": "completed", "reconciliationStatus": "not_required"}
             return {"taskId": stream[5:], "state": "awaiting_verification"}
         if op == "bots":
             return {"bots": [{"botId": "issue-steward", "displayName": "Issue Steward", "roleKind": "crew"}]}
@@ -204,6 +209,8 @@ def test_kanban_inventory_is_runtime_projection_only():
     controller = BotOperatorController(runtime)
     projection = controller.kanban()
     assert projection["missionCount"] == 1
+    assert projection["driverRunCount"] == 1
+    assert projection["activeDriverRuns"] == []
     assert projection["taskCount"] == 1
     assert projection["missions"][0]["missionId"] == "m-1"
     assert projection["tasks"][0]["state"] == "awaiting_verification"

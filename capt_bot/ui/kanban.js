@@ -2,7 +2,8 @@
 
 // This is a projection and an operator decision surface, never a second
 // mission authority. Every mutation uses an existing RuntimeService command.
-const board = {missions: [], tasks: [], selected: null, dispositionPreview: null};
+const board = {missions: [], tasks: [], selected: null, dispositionPreview: null,
+  activeDriverRuns: [], unreconciledDriverRuns: []};
 const terminalTaskStates = new Set(["succeeded", "failed", "cancelled"]);
 const terminalMissionStates = new Set(["completed", "failed", "cancelled"]);
 
@@ -96,7 +97,8 @@ function renderKanban() {
   const review = open.filter(m => missionLane(m) === "review").length;
   const paused = open.filter(m => missionLane(m) === "paused").length;
   $("kanbanSummary").textContent =
-    open.length + " open · " + review + " verification · " + paused + " suspended";
+    open.length + " open · " + review + " verification · " + paused + " suspended" +
+    " · " + board.activeDriverRuns.length + " active DriverRuns";
   const matches = board.missions.filter(m => {
     if (filter === "all" && terminalMissionStates.has(m.state)) return false;
     if (filter !== "all" && missionLane(m) !== filter) return false;
@@ -138,6 +140,8 @@ async function refreshKanban() {
     const result = await api("/api/kanban");
     board.missions = result.missions || [];
     board.tasks = result.tasks || [];
+    board.activeDriverRuns = result.activeDriverRuns || [];
+    board.unreconciledDriverRuns = result.unreconciledDriverRuns || [];
     renderKanban();
     if (board.selected) showMission(board.selected.missionId);
   } catch (error) {

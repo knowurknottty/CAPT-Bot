@@ -350,7 +350,29 @@ class BotOperatorController:
         """Complete, read-only mission/task inventory for reviewed operator decisions."""
         missions = self._query("missions", limit=1000)
         tasks = self._query("tasks", limit=1000)
+        inventory = self._query("list_aggregates")
+        runs = [item for item in inventory
+                if item.get("kind") == "driverrun"]
+        if len(runs) > 5000:
+            raise ValueError("DriverRun inventory exceeds reviewed UI boundary")
+        active_runs = []
+        unreconciled_runs = []
+        for run in runs:
+            current = self._query("get_state", streamId=run["streamId"])
+            summary = {
+                "driverRunId": current.get("driverRunId"),
+                "missionId": current.get("missionId"),
+                "state": current.get("state"),
+                "reconciliationStatus": current.get("reconciliationStatus"),
+            }
+            if summary["state"] in ("created", "submitted", "running"):
+                active_runs.append(summary)
+            if summary["reconciliationStatus"] == "reconciliation_required":
+                unreconciled_runs.append(summary)
         return {
+            "driverRunCount": len(runs),
+            "activeDriverRuns": active_runs,
+            "unreconciledDriverRuns": unreconciled_runs,
             "missions": missions.get("missions", []),
             "tasks": tasks.get("tasks", []),
             "countsByMissionState": missions.get("countsByState", {}),
