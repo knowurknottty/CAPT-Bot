@@ -185,6 +185,15 @@ function updateWorkflow(phase, message, origin) {
   $("workflowRibbon").hidden = false;
   $("workflowOrigin").textContent = origin || state.recoveryMissionId || "New governed work";
   $("workflowStatus").textContent = message;
+  const button = $("workflowNextAction");
+  button.textContent = {
+    evidence: "Review evidence",
+    scope: "Edit scoped draft",
+    compile: "Review compile status",
+    approval: "Open approval inspector",
+    execute: "Inspect execution",
+    verify: "Inspect verification"
+  }[phase] || "Review next step";
   const at = WORKFLOW_PHASES.indexOf(phase);
   for (const item of $("workflowSteps").querySelectorAll("li")) {
     const n = WORKFLOW_PHASES.indexOf(item.dataset.step);
@@ -354,7 +363,9 @@ async function selectProposal(basis) {
         "capt",
       );
     } else {
-      addMessage("CAPT", "Selected prompt is bound to an approval request.", "capt");
+      addMessage("CAPT", approval ?
+        "Selected prompt is bound to a one-use approval request." :
+        "Selection recorded; no executable approval receipt is available yet. Inspect the authority panel.", "capt");
     }
     updateWorkflow("approval", "Prompt selection recorded. Review the exact bound approval before any model run.");
     await refresh();
@@ -518,6 +529,20 @@ $("openMissionArchive").addEventListener("click", () => {
   $("kanbanFilter").value = "terminal";
   $("kanbanSearch").value = "";
   boardView("goals");
+});
+$("workflowNextAction").addEventListener("click", () => {
+  if (state.workflowPhase === "scope") {
+    $("promptInput").focus();
+    return;
+  }
+  if (state.workflowPhase === "evidence" && state.recoveryMissionId) {
+    $("workflowBackToEvidence").click();
+    return;
+  }
+  $("inspector").classList.add("open");
+  const target = state.workflowPhase === "verify" ? $("reviewDetail") :
+    state.workflowPhase === "approval" ? $("proposalText") : $("runtimeState");
+  target?.scrollIntoView({block: "nearest", behavior: "auto"});
 });
 $("workflowBackToEvidence").addEventListener("click", () => {
   if (!state.recoveryMissionId) return;

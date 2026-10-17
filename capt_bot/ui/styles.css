@@ -266,3 +266,6 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
   .workflow-ribbon { padding: 12px; }
   .workflow-steps li { flex: 1 0 26%; text-align: center; }
 }
+
+.workflow-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.workflow-actions button { justify-self: auto; }

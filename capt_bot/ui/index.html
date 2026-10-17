@@ -60,7 +60,10 @@
             <li data-step="compile">Compile</li><li data-step="approval">Approval</li>
             <li data-step="execute">Execute</li><li data-step="verify">Verify</li>
           </ol>
-          <button class="secondary" id="workflowBackToEvidence">View predecessor receipts</button>
+          <div class="workflow-actions">
+            <button class="primary" id="workflowNextAction">Review next step</button>
+            <button class="secondary" id="workflowBackToEvidence">View predecessor receipts</button>
+          </div>
         </section>
         <div id="messages" class="messages" aria-live="polite"></div>
       </section>
