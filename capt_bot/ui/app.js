@@ -126,8 +126,23 @@ function renderApproval(approval) {
     }
   }
   const pending = Boolean(requestId) && ["pending", "requested", "awaiting_human"].includes(status);
-  $("approveRequest").disabled = !pending;
-  $("denyRequest").disabled = !pending;
+  const expiresAt = approval?.expiresAt;
+  const expired = Boolean(expiresAt) && Number.isFinite(Date.parse(expiresAt)) &&
+    Date.parse(expiresAt) <= Date.now();
+  // The global approval projection may not carry the run binding. It is
+  // useful for inspection, but not a runnable one-use approval receipt.
+  const bound = ["requestId", "missionId", "taskId", "driverRunId"].every(
+    key => Boolean(approval?.[key])
+  );
+  $("approveRequest").disabled = !pending || expired || !bound;
+  $("denyRequest").disabled = !pending || expired;
+  if (pending && (expired || !bound)) {
+    const warning = document.createElement("p");
+    warning.textContent = expired
+      ? "This approval has expired. Start a fresh governed request."
+      : "This is a summary record, not an executable approval receipt. Open its mission to request a fresh bound approval.";
+    $("approvalDetail").append(warning);
+  }
 }
 
 function renderMissions(snapshot) {

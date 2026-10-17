@@ -42,6 +42,7 @@ function showMission(id) {
   $("dispositionCommit").disabled = true;
   $("kanbanAuthorize").disabled = mission.state !== "draft";
   $("kanbanComplete").disabled = mission.state !== "executing";
+  $("kanbanReconcile").disabled = mission.state !== "authorized";
   $("kanbanCancel").disabled = terminalMissionStates.has(mission.state);
   $("kanbanDetailTitle").textContent = mission.missionId;
   const linked = missionTasks(id);
@@ -188,7 +189,8 @@ async function reviewMissionDisposition(target) {
       " · " + preview.acceptedClaimCount + " accepted claims" +
       (blockerText ? " · BLOCKED: " + blockerText : " · ready for explicit confirmation");
     $("dispositionCommit").textContent = target === "cancel" ?
-      "Confirm cancellation" : target === "complete" ? "Confirm completion" : "Confirm authorization";
+      "Confirm cancellation" : target === "complete" ? "Confirm completion" :
+      target === "reconcile_complete" ? "Confirm reconciliation" : "Confirm authorization";
     updateDispositionConfirmation();
   } catch(error) {
     $("dispositionSummary").textContent = "Could not prepare review: " + error.message;
@@ -235,6 +237,7 @@ async function commitMissionDisposition() {
 }
 $("kanbanAuthorize").addEventListener("click", () => reviewMissionDisposition("authorize"));
 $("kanbanComplete").addEventListener("click", () => reviewMissionDisposition("complete"));
+$("kanbanReconcile").addEventListener("click", () => reviewMissionDisposition("reconcile_complete"));
 $("kanbanCancel").addEventListener("click", () => reviewMissionDisposition("cancel"));
 $("dispositionAbort").addEventListener("click", () => {
   board.dispositionPreview = null;
