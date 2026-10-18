@@ -182,6 +182,7 @@ function draftReviewedNextStep() {
   addMessage("CAPT · provenance", recovery.state + " predecessor " +
     recovery.missionId + ". " + recovery.sourceBoundary +
     "\nNo new mission, approval or DriverRun has been created.", "capt");
+  nextStepFrom();
   $("promptInput").focus();
 }
 

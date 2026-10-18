@@ -74,7 +74,15 @@ function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
     $("threadTitle").textContent = "Mission · " + control.missionId;
   }
   let step;
-  if (snapshot?.approvalBindingError) {
+  if (state.recoveryMissionId && state.workflowPhase === "scope" &&
+      $("promptInput").value.trim()) {
+    step = {
+      title: "Review your proposed next task",
+      description: "CAPT prepared a draft from the mission's evidence. Edit it below, then Send to compile a new proposal. Sending alone does not create an approval or start a run.",
+      label: "Review and edit draft",
+      action: "compose",
+    };
+  } else if (snapshot?.approvalBindingError) {
     step = {
       title: "This approval cannot start a task",
       description: "The recorded approval points to a missing or mismatched task. CAPT has blocked execution. Inspect the mission receipts and create a fresh, reviewed task. Do not reuse this approval.",
@@ -210,8 +218,9 @@ function renderProposal(proposal) {
 
   const blocked = status === "clarification_required";
   const active = proposal?.state === "active";
-  $("approveProposal").disabled = !active || blocked;
-  $("useOriginal").disabled = !active || blocked;
+  const hasBoundSelection = Boolean(state.snapshot?.control?.approvalRequestId);
+  $("approveProposal").disabled = !active || blocked || hasBoundSelection;
+  $("useOriginal").disabled = !active || blocked || hasBoundSelection;
 
   if (blocked) {
     state.clarificationFor = proposal.proposalId;
