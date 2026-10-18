@@ -316,3 +316,49 @@ def test_ui_read_only_query_recovers_not_connected_without_replaying_commands():
     assert out == {"reconnected": True, "operation": "missions"}
     assert port.identity["integrity"] == "ok"
     assert port.client.commands == []
+
+
+def test_orphaned_bound_approval_is_never_runnable_or_displayed_as_valid():
+    from datetime import datetime, timedelta, timezone
+
+    class OrphanRuntime(FakeRuntime):
+        def __init__(self):
+            super().__init__()
+            self.control_state.update({
+                "proposalId": "pp-1",
+                "proposalSelection": "proposed",
+                "approvalRequestId": "approval-orphan",
+                "missionId": "goal-a",
+                "taskId": "goal-a-task-synthetic",
+                "driverRunId": "dr-orphan",
+            })
+            self.approval = {
+                "requestId": "approval-orphan",
+                "missionId": "goal-a", "taskId": "goal-a-task-synthetic",
+                "state": "approved", "operation": "ModelOperatorInspection",
+                "remainingUses": 1, "consumedAt": None,
+                "expiresAt": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                "scope": {"approvalBinding": {
+                    "proposalId": "pp-1", "missionId": "goal-a",
+                    "taskId": "goal-a-task-synthetic", "driverRunId": "dr-orphan",
+                    "provider": "local", "model": "qwen",
+                    "targetRoot": "/tmp/project",
+                }},
+            }
+
+        def query(self, request):
+            if request["op"] == "operator_execution_state":
+                return {"approvalRequestState": self.approval, "driverRunState": None}
+            if request["op"] == "get_state" and request["streamId"] == "task-goal-a-task-synthetic":
+                return None
+            return super().query(request)
+
+    runtime = OrphanRuntime()
+    controller = BotOperatorController(runtime)
+    state = controller.snapshot()
+    assert "boundApproval" not in state
+    assert state["approvalBindingError"] == "BOUND_TASK_NOT_DURABLE_RECONCILE_FIRST"
+    import pytest
+    with pytest.raises(ValueError, match="BOUND_TASK"):
+        controller.start_bound_task("approval-orphan")
+    assert not any(x[0] == "run_approved_hermes_inspection" for x in runtime.calls)

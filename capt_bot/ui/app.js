@@ -271,6 +271,11 @@ function renderRuntime(snapshot) {
   // Never overwrite the exact current-session approval with an unrelated
   // global summary (which lacks a DriverRun binding).
   renderApproval(snapshot?.boundApproval || null);
+  if (snapshot?.approvalBindingError) {
+    $("startTaskStatus").textContent =
+      "Blocked: " + snapshot.approvalBindingError +
+      ". Approval refers to a missing or mismatched task. Do not approve or start. Reconcile and request fresh authority.";
+  }
 }
 
 function renderBots(snapshot) {

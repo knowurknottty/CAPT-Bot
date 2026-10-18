@@ -354,6 +354,15 @@ class BotOperatorController:
             raise ValueError("SELECTED_OBJECTIVE_CANNOT_BE_RECONSTRUCTED")
         if approval.get("operation") != "ModelOperatorInspection":
             raise ValueError("APPROVAL_OPERATION_NOT_RUNNABLE")
+        try:
+            task = self._query("get_state", streamId="task-" + control["taskId"])
+        except Exception as exc:
+            raise ValueError("BOUND_TASK_NOT_DURABLE_RECONCILE_FIRST") from exc
+        if (not isinstance(task, dict)
+                or task.get("taskId") != control["taskId"]
+                or task.get("missionId") != control["missionId"]
+                or task.get("state") in ("cancelled", "failed", "succeeded")):
+            raise ValueError("BOUND_TASK_MISSING_OR_WRONG_MISSION")
         # The runtime re-derives the same signed assembly and owns dispatch.
         return self.run_approved(
             {
@@ -553,21 +562,30 @@ class BotOperatorController:
                 and all(control.get(k) and control.get(k) == binding.get(k)
                         for k in fields)
                 and all(grant.get(k) == control.get(k) for k in ("missionId", "taskId"))):
-            result["boundApproval"] = {
-                "requestId": grant["requestId"],
-                "missionId": control["missionId"],
-                "taskId": control["taskId"],
-                "driverRunId": control["driverRunId"],
-                "state": grant.get("state"),
-                "remainingUses": grant.get("remainingUses"),
-                "consumedAt": grant.get("consumedAt"),
-                "expiresAt": grant.get("expiresAt"),
-                "riskClassification": grant.get("riskClassification"),
-                "operation": grant.get("operation"),
-                "targetRoot": binding.get("targetRoot"),
-                "provider": binding.get("provider"),
-                "model": binding.get("model"),
-            }
+            try:
+                live_task = self._query("get_state", streamId="task-" + control["taskId"])
+            except Exception:
+                live_task = None
+            if (not live_task
+                    or live_task.get("taskId") != control["taskId"]
+                    or live_task.get("missionId") != control["missionId"]):
+                result["approvalBindingError"] = "BOUND_TASK_NOT_DURABLE_RECONCILE_FIRST"
+            else:
+                result["boundApproval"] = {
+                    "requestId": grant["requestId"],
+                    "missionId": control["missionId"],
+                    "taskId": control["taskId"],
+                    "driverRunId": control["driverRunId"],
+                    "state": grant.get("state"),
+                    "remainingUses": grant.get("remainingUses"),
+                    "consumedAt": grant.get("consumedAt"),
+                    "expiresAt": grant.get("expiresAt"),
+                    "riskClassification": grant.get("riskClassification"),
+                    "operation": grant.get("operation"),
+                    "targetRoot": binding.get("targetRoot"),
+                    "provider": binding.get("provider"),
+                    "model": binding.get("model"),
+                }
         for key, op in (("missions", "missions"), ("tasks", "tasks"), ("approvals", "approvals")):
             try:
                 result[key] = self._query(op, limit=1000 if key != "approvals" else 100)
