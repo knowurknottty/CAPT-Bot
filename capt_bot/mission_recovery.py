@@ -185,20 +185,25 @@ def inspect_mission(controller: Any, mission_id: str) -> Dict[str, Any]:
             + "\n".join(issue_lines[:60])
         )
     else:
-        next_step = ("Review receipts and draft a new goal; the old mission cannot be "
-                     "reactivated." if terminal else
-                     "Review blockers, then continue under the existing mission only if authorized.")
+        next_step = (
+            "Review receipts and create a separately governed successor goal. "
+            "In-place task creation is unavailable through the current Bot/Core "
+            "command boundary. The predecessor remains unchanged; no automatic replay."
+        )
         scope = "No additional authority granted by this preview."
         write_gate = "Execution and external writes remain separately governed."
         draft = (
-            f"Review CAPT mission {mission_id} (stored state: {final_state}). "
-            f"Objective: {objective}. Reconcile prior receipts and verification first. "
+            f"Create a NEW reviewed successor mission for CAPT predecessor {mission_id} "
+            f"(stored state: {final_state}; retain all prior evidence and original mission). "
+            f"Objective: {objective}. Reconcile predecessor receipts and verification first. "
             "Present the smallest next step, bounded authority, and explicit approval requests. "
-            "Never assert completed work without evidence."
+            "Do not restart any predecessor run or claim completed work without evidence."
         )
     return {
         "missionId": mission_id, "state": final_state, "terminal": terminal,
-        "continuableInPlace": final_state in ("authorized", "executing"),
+        # True in-place continuation needs an atomic durable TaskNode creation
+        # command that Bot cannot invoke yet. Prevent orphan approval bindings.
+        "continuableInPlace": False,
         "missionEvents": _event_receipts(controller, "mission-" + mission_id),
         "tasks": task_summary, "approvals": approval_rows,
         "driverRuns": runs, "github": issue_snapshot, "candidateInventory": artifacts,

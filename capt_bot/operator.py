@@ -213,12 +213,14 @@ class BotOperatorController:
         mission_id = None
         task_id = None
         if existing_mission_id:
-            if as_mission:
-                raise ValueError("cannot create a new Mission while continuing an existing one")
-            existing = self._query("get_state", streamId="mission-" + existing_mission_id)
-            if existing.get("state") not in ("authorized", "executing"):
-                raise ValueError("existing Mission is not authorized for a successor task")
-            mission_id = existing_mission_id
+            # The present Core command interface cannot atomically create
+            # a fresh TaskNode for an in-place continuation. Passing only
+            # missionId causes a synthetic, non-durable approval task binding.
+            # Never create an orphan HumanApproval on this unsupported path.
+            raise ValueError(
+                "IN_PLACE_CONTINUATION_REQUIRES_DURABLE_TASK_CREATION; "
+                "review a separately governed successor goal instead"
+            )
         if as_mission:
             mission_id = "goal-" + uuid.uuid4().hex[:20]
             # CAPT OperatorMissionIntent allows a 4096-character objective,

@@ -76,9 +76,12 @@ function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
   let step;
   if (state.recoveryMissionId && state.workflowPhase === "scope" &&
       $("promptInput").value.trim()) {
+    const successor = state.missionOnSubmit;
     step = {
-      title: "Review your proposed next task",
-      description: "CAPT prepared a draft from the mission's evidence. Edit it below, then Send to compile a new proposal. Sending alone does not create an approval or start a run.",
+      title: successor ? "Review the new successor mission draft" : "Review your proposed next task",
+      description: successor
+        ? "The original mission remains intact. Edit this evidence-based successor draft, then Send to compile. A new mission and one-use approval are requested only after your separate proposal-review action."
+        : "CAPT prepared a draft from the mission's evidence. Edit it below, then Send to compile a new proposal. Sending alone does not create an approval or start a run.",
       label: "Review and edit draft",
       action: "compose",
     };

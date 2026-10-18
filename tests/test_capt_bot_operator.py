@@ -235,17 +235,16 @@ def test_kanban_inventory_is_runtime_projection_only():
     assert runtime.calls == []
 
 
-def test_kanban_continuation_reuses_authorized_mission():
+def test_kanban_in_place_continuation_fails_closed_until_durable_task_creation():
     runtime = FakeRuntime()
     runtime.proposal["compilationStatus"] = "ready_for_approval"
     controller = BotOperatorController(runtime)
-    result = controller.select_proposal("pp-1", existing_mission_id="m-1")
-    assert result["missionId"] == "m-1"
-    assert not any(op == "create_mission" for op, _ in runtime.calls)
-    operation, payload = runtime.calls[-1]
-    assert operation == "operator_proposal_select"
-    assert payload["missionId"] == "m-1"
-    assert "taskId" not in payload
+    import pytest
+    before = len(runtime.calls)
+    with pytest.raises(ValueError, match="IN_PLACE_CONTINUATION_REQUIRES_DURABLE_TASK_CREATION"):
+        controller.select_proposal("pp-1", existing_mission_id="m-1")
+    assert not any(operation == "operator_proposal_select"
+                   for operation, _ in runtime.calls[before:])
 
 
 def test_kanban_task_cancel_never_mutates_mission_or_fabricates_verification():
