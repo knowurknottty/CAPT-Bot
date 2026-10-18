@@ -176,8 +176,10 @@ function draftReviewedNextStep() {
     "Review of live predecessor required. Send to compile a new task; no old driver run is restarted automatically.";
   boardView("chat");
   updateWorkflow("scope", successor ?
-    "Predecessor is terminal. Review and edit the proposed scope before compiling a NEW goal." :
-    "Predecessor is active. Review and edit the next task before compiling the continuation.",
+    (recovery.terminal ?
+      "Predecessor is terminal. Review the draft before compiling a NEW successor goal." :
+      "The existing mission remains authorized, but in-place task creation is unavailable. Review this separate successor draft before compiling; no old run is restarted.") :
+    "Review and edit the next task before compiling a governed continuation.",
     recovery.missionId);
   addMessage("CAPT · provenance", recovery.state + " predecessor " +
     recovery.missionId + ". " + recovery.sourceBoundary +
