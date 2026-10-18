@@ -133,6 +133,24 @@ def test_mission_selection_binds_created_mission_and_task():
     assert select["taskId"] == "t-1"
 
 
+def test_long_mission_prompt_keeps_full_text_but_binds_a_contract_safe_task_title():
+    runtime = FakeRuntime()
+    original = "Assess all open CAPT_core issues. " + "A" * 1200
+    proposed = "Mission: assess and resolve all CAPT_core issues " + "B" * 1500
+    runtime.proposal.update(
+        originalPrompt=original, proposedPrompt=proposed,
+        compilationStatus="ready_for_approval",
+    )
+    result = BotOperatorController(runtime).select_proposal("pp-1", as_mission=True)
+    assert result["selectedObjective"] == proposed
+    op, payload = next(entry for entry in runtime.calls if entry[0] == "create_mission")
+    assert op == "create_mission"
+    assert 1 <= len(payload["objective"]) <= 512
+    assert payload["rawRequest"] == original
+    assert payload["normalizedRequest"] == proposed
+    assert len(payload["normalizedRequest"]) > len(payload["objective"])
+
+
 def test_approved_run_uses_exact_bound_ids_and_surfaces_verification_state():
     runtime = FakeRuntime()
     controller = BotOperatorController(runtime)

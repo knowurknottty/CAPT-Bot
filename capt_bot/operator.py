@@ -221,6 +221,17 @@ class BotOperatorController:
             mission_id = existing_mission_id
         if as_mission:
             mission_id = "goal-" + uuid.uuid4().hex[:20]
+            # CAPT OperatorMissionIntent allows a 4096-character objective,
+            # but RuntimeService also uses it as TaskNode.title (max 512).
+            # Only the DISPLAY TITLE is bounded; both full prompts remain
+            # intact in rawRequest and normalizedRequest and in the proposal.
+            full_objective = str(proposal["proposedPrompt"])
+            short_title = next(
+                (line.strip() for line in full_objective.splitlines() if line.strip()),
+                full_objective.strip(),
+            )
+            if len(short_title) > 480:
+                short_title = short_title[:477].rstrip() + "…"
             criteria = list(
                 (proposal.get("verificationContract") or {}).get("acceptanceCriteria") or []
             )
@@ -232,7 +243,7 @@ class BotOperatorController:
             mission_receipt = self._command("create_mission", {
                 "schemaVersion": "1.0.0",
                 "missionId": mission_id,
-                "objective": proposal["proposedPrompt"],
+                "objective": short_title,
                 "rawRequest": proposal["originalPrompt"],
                 "normalizedRequest": proposal["proposedPrompt"],
                 "constraints": [],
