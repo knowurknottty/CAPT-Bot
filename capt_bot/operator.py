@@ -253,7 +253,17 @@ class BotOperatorController:
                 "policyReason": "Operator promoted a compiled CAPT-Bot prompt into a durable Mission/Goal.",
             })
             if mission_receipt.get("status") not in ("accepted", "idempotent"):
-                raise RuntimeError("mission creation refused")
+                # Surface only the structured refusal classification/code; never
+                # copy arbitrary backend details or prompt payloads into the UI.
+                classification = str(mission_receipt.get("classification") or "unknown")[:80]
+                envelope = mission_receipt.get("error") or {}
+                code = envelope.get("code") if isinstance(envelope, dict) else None
+                raise RuntimeError(
+                    "mission creation refused: status=" +
+                    str(mission_receipt.get("status") or "unknown")[:50] +
+                    "; classification=" + classification +
+                    "; code=" + str(code or "unknown")[:100]
+                )
             mission_id = mission_receipt["result"]["missionId"]
             task_id = mission_receipt["result"]["taskId"]
 
