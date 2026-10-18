@@ -25,11 +25,11 @@
         <div id="botList" class="mission-list" aria-live="polite">Loading…</div>
         <button class="quiet-button" id="createBot">Create Bot identity</button>
       </details>
-      <div class="rail-section rail-goals">
-        <p class="eyebrow">Active goals <span id="activeGoalCount"></span></p>
+      <details class="rail-section rail-goals">
+        <summary class="rail-goal-summary">Other open missions <span id="activeGoalCount"></span></summary>
         <div id="missionList" class="mission-list"></div>
         <button class="quiet-button archive-link" id="openMissionArchive">Browse historical missions</button>
-      </div>
+      </details>
       <div class="rail-footer">
         <button class="quiet-button" id="openConfig">Runtime configuration</button>
         <div class="connection"><span id="statusDot"></span><span id="statusText">Connecting</span></div>
@@ -41,9 +41,9 @@
         <button class="icon-button mobile-only" id="toggleLeft" aria-label="Open navigation">Menu</button>
         <div>
           <p class="eyebrow">CAPT operator</p>
-          <h1 id="threadTitle">New conversation</h1>
+          <h1 id="threadTitle">Connecting to CAPT…</h1>
         </div>
-        <button class="icon-button" id="toggleInspector">Inspect</button>
+        <button class="icon-button" id="toggleInspector" aria-controls="inspector" aria-expanded="false">Inspect</button>
       </header>
 
       <section class="conversation" id="conversation">
@@ -148,7 +148,7 @@
       </section>
     </main>
 
-    <aside class="rail rail-right" id="inspector">
+    <aside class="rail rail-right" id="inspector" inert>
       <div class="inspector-head">
         <div><p class="eyebrow">Execution contract</p><h2>Inspector</h2></div>
         <button class="icon-button mobile-only" id="closeInspector">Close</button>
