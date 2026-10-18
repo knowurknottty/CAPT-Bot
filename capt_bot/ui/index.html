@@ -14,18 +14,18 @@
         <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 23 16 5l11 18-11-5z"/></svg>
         <div><strong>CAPT</strong><span>BOT</span></div>
       </div>
-      <button class="new-chat" id="newChat">New thread</button>
-      <button class="quiet-button" id="createBot">Create Bot</button>
+      <button class="new-chat" id="newChat">New task / conversation</button>
       <nav class="nav-block" aria-label="Workspace">
         <button class="nav-item active" data-view="chat">Conversation</button>
         <button class="nav-item" data-view="goals">Missions / Goals</button>
         <button class="nav-item" data-view="evidence">Evidence</button>
       </nav>
-      <div class="rail-section">
-        <p class="eyebrow">Registered Bots</p>
+      <details class="rail-section rail-advanced">
+        <summary>Bot identities · advanced</summary>
         <div id="botList" class="mission-list" aria-live="polite">Loading…</div>
-      </div>
-      <div class="rail-section">
+        <button class="quiet-button" id="createBot">Create Bot identity</button>
+      </details>
+      <div class="rail-section rail-goals">
         <p class="eyebrow">Active goals <span id="activeGoalCount"></span></p>
         <div id="missionList" class="mission-list"></div>
         <button class="quiet-button archive-link" id="openMissionArchive">Browse historical missions</button>
@@ -40,7 +40,7 @@
       <header class="topbar">
         <button class="icon-button mobile-only" id="toggleLeft" aria-label="Open navigation">Menu</button>
         <div>
-          <p class="eyebrow">Governed synthetic worker</p>
+          <p class="eyebrow">CAPT operator</p>
           <h1 id="threadTitle">New conversation</h1>
         </div>
         <button class="icon-button" id="toggleInspector">Inspect</button>
@@ -50,16 +50,28 @@
         <div class="welcome" id="welcome">
           <p class="kicker">Intent in. Evidence out.</p>
           <h2>Describe the work at human resolution.</h2>
-          <p>Developer mode turns a simple software request into a governed OMNI → META → FORGE → SIGMA execution contract before anything runs.</p>
+          <p>Describe what you want done. CAPT will show the next required decision. Approvals and execution remain separate.</p>
         </div>
+        <section class="next-step" id="nextStep" aria-live="polite">
+          <p class="eyebrow">Your next step</p>
+          <h2 id="nextStepTitle">Connecting to CAPT…</h2>
+          <p id="nextStepDescription">Checking the current mission and approval receipts. Nothing will execute automatically.</p>
+          <div class="next-step-actions">
+            <button class="primary" id="nextStepButton" disabled>Checking status…</button>
+            <button class="secondary" id="nextStepDetails">See review details</button>
+          </div>
+        </section>
         <section class="workflow-ribbon" id="workflowRibbon" hidden aria-live="polite">
           <div><p class="eyebrow">Governed work process</p><strong id="workflowOrigin"></strong>
             <p id="workflowStatus">Evidence review</p></div>
-          <ol id="workflowSteps" class="workflow-steps">
-            <li data-step="evidence">Evidence</li><li data-step="scope">Scope</li>
-            <li data-step="compile">Compile</li><li data-step="approval">Approval</li>
-            <li data-step="execute">Execute</li><li data-step="verify">Verify</li>
-          </ol>
+          <details class="workflow-advanced">
+            <summary>Show six governance stages</summary>
+            <ol id="workflowSteps" class="workflow-steps">
+              <li data-step="evidence">Evidence</li><li data-step="scope">Scope</li>
+              <li data-step="compile">Compile</li><li data-step="approval">Approval</li>
+              <li data-step="execute">Execute</li><li data-step="verify">Verify</li>
+            </ol>
+          </details>
           <div class="workflow-actions">
             <button class="primary" id="workflowNextAction">Review next step</button>
             <button class="secondary" id="workflowBackToEvidence">View predecessor receipts</button>
@@ -99,13 +111,16 @@
               <div id="missionRecoveryIssues" class="recovery-issues"></div>
             </section>
             <button id="kanbanContinue" class="primary full" disabled>Draft a governed next step</button>
-            <div class="disposition-actions" id="dispositionActions">
+            <details class="advanced-contract" id="advancedDisposition">
+              <summary>Advanced mission controls · authorize, close, cancel</summary>
+              <div class="disposition-actions" id="dispositionActions">
               <button id="kanbanAuthorize" class="secondary" disabled>Authorize draft</button>
               <button id="kanbanComplete" class="secondary" disabled>Complete verified</button>
               <button id="kanbanReconcile" class="secondary" disabled>Reconcile verified result</button>
               <button id="kanbanCancel" class="deny" disabled>Cancel mission</button>
-              <button id="kanbanRevoke" class="deny" disabled>Cancel &amp; revoke approvals</button>
-            </div>
+                <button id="kanbanRevoke" class="deny" disabled>Cancel &amp; revoke approvals</button>
+              </div>
+            </details>
             <section class="disposition-review" id="dispositionReview" hidden>
               <h4>Mission disposition review</h4>
               <p id="dispositionSummary">Inspect the authoritative scope before confirmation.</p>
@@ -121,15 +136,15 @@
 
       <section class="composer-zone">
         <div class="mode-strip">
-          <label class="toggle"><input type="checkbox" id="developerMode"><span></span>Developer</label>
-          <label class="toggle"><input type="checkbox" id="missionMode"><span></span>Mission / Goal</label>
+          <label class="toggle"><input type="checkbox" id="missionMode"><span></span>Track as mission</label>
+          <label class="toggle"><input type="checkbox" id="developerMode"><span></span>Advanced mode</label>
           <button class="text-button" id="chainButton">OMNI → META → FORGE → SIGMA</button>
         </div>
         <div class="composer">
           <textarea id="promptInput" rows="2" placeholder="Describe what you want CAPT to do…" aria-label="Prompt"></textarea>
           <button class="send" id="sendPrompt">Send</button>
         </div>
-        <p class="composer-note" id="composerNote">Nothing executes from this box until CAPT admits the governed path.</p>
+        <p class="composer-note" id="composerNote">Send prepares a proposal. Nothing runs until explicitly approved and started.</p>
       </section>
     </main>
 
@@ -138,15 +153,18 @@
         <div><p class="eyebrow">Execution contract</p><h2>Inspector</h2></div>
         <button class="icon-button mobile-only" id="closeInspector">Close</button>
       </div>
-      <section class="panel">
-        <div class="panel-head"><h3>Prompt chain</h3><span id="proposalStatus">Idle</span></div>
-        <ol class="stage-chain" id="stageChain">
+      <details class="advanced-contract">
+        <summary>Technical details · compilation and runtime</summary>
+        <section class="panel">
+          <div class="panel-head"><h3>Prompt chain</h3><span id="proposalStatus">Idle</span></div>
+          <ol class="stage-chain" id="stageChain">
           <li data-stage="OMNI"><b>01</b><span>OMNI</span><em>intent</em></li>
           <li data-stage="META"><b>02</b><span>META</span><em>contract</em></li>
           <li data-stage="FORGE"><b>03</b><span>FORGE</span><em>repo</em></li>
           <li data-stage="SIGMA"><b>04</b><span>SIGMA</span><em>SDR</em></li>
-        </ol>
-      </section>
+          </ol>
+        </section>
+      </details>
       <section class="panel">
         <div class="panel-head"><h3>Compiled proposal</h3><button class="text-button" id="copyProposal">Copy</button></div>
         <pre id="proposalText" class="proposal-text">No proposal yet.</pre>
@@ -178,10 +196,13 @@
           <button class="deny" id="rejectResult" disabled>Reject result</button>
         </div>
       </section>
-      <section class="panel">
-        <div class="panel-head"><h3>Mission state</h3><button class="text-button" id="refreshState">Refresh</button></div>
-        <div id="runtimeState" class="detail-list"><p>Awaiting RuntimeService.</p></div>
-      </section>
+      <details class="advanced-contract">
+        <summary>Technical runtime state</summary>
+        <section class="panel">
+          <div class="panel-head"><h3>Mission state</h3><button class="text-button" id="refreshState">Refresh</button></div>
+          <div id="runtimeState" class="detail-list"><p>Awaiting RuntimeService.</p></div>
+        </section>
+      </details>
     </aside>
   </div>
 

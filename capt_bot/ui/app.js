@@ -14,6 +14,7 @@ const state = {
   recoveryMissionId: null,
   workflowPhase: null,
   providerCatalog: null,
+  nextStepAction: "compose",
 };
 
 async function api(path, options = {}) {
@@ -56,6 +57,127 @@ function setBusy(value, note = "") {
   state.busy = value;
   $("sendPrompt").disabled = value;
   if (note) $("composerNote").textContent = note;
+  $("nextStepButton").disabled = value;
+}
+
+// The operator sees ONE safe next decision. All authority still belongs to
+// RuntimeService and the existing human-only approval/explicit-Start controls.
+function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
+  const control = snapshot?.control || {};
+  const grant = snapshot?.boundApproval || null;
+  const run = snapshot?.execution?.driverRunState || null;
+  const title = proposal?.originalPrompt?.split("\n").find(Boolean)?.trim();
+  if (title && !state.recoveryMissionId) {
+    $("threadTitle").textContent = title.slice(0, 64) +
+      (title.length > 64 ? "…" : "");
+  } else if (control.missionId && !state.recoveryMissionId) {
+    $("threadTitle").textContent = "Mission · " + control.missionId;
+  }
+  let step;
+  if (snapshot?.approvalBindingError) {
+    step = {
+      title: "This approval cannot start a task",
+      description: "The recorded approval points to a missing or mismatched task. CAPT has blocked execution. Inspect the mission receipts and create a fresh, reviewed task. Do not reuse this approval.",
+      label: "Inspect blocked mission",
+      action: "mission",
+    };
+  } else if (run) {
+    step = {
+      title: "An execution receipt already exists",
+      description: "Inspect the DriverRun and its verification state. CAPT will not automatically retry an indeterminate effect.",
+      label: "Review run receipt", action: "result",
+    };
+  } else if (grant?.state === "requested") {
+    const expired = !Number.isFinite(Date.parse(grant.expiresAt)) ||
+      Date.parse(grant.expiresAt) <= Date.now();
+    step = expired ? {
+      title: "Approval expired: request fresh authority",
+      description: "This approval can no longer be used. Inspect the mission history before preparing a newly reviewed task.",
+      label: "Inspect mission", action: "mission",
+    } : {
+      title: "Your approval is required",
+      description: "Review the exact task, model and repository. Click Approve once or Deny in the review panel. Approval alone never launches the run.",
+      label: "Review approval", action: "approval",
+    };
+  } else if (grant?.state === "approved") {
+    const expired = !Number.isFinite(Date.parse(grant.expiresAt)) ||
+      Date.parse(grant.expiresAt) <= Date.now();
+    const eligible = !expired && !grant.consumedAt && Number(grant.remainingUses) > 0;
+    step = eligible ? {
+      title: "Approved: ready for your Start decision",
+      description: "The one-use authority is recorded. Clicking Start will dispatch the bound task; it is not a simulation. You can still inspect the scope first.",
+      label: "Start approved task", action: "start",
+    } : {
+      title: "Authority is no longer executable",
+      description: "Approval was consumed, expired or exhausted. Review the ledger before creating a successor. Do not replay this run.",
+      label: "Inspect mission", action: "mission",
+    };
+  } else if (control.approvalRequestId) {
+    step = {
+      title: "This approval needs reconciliation",
+      description: "CAPT has an approval record, but not a verified runnable binding in this session. Inspect the authoritative task and approval receipts before taking action.",
+      label: "Inspect mission", action: "mission",
+    };
+  } else if (proposal?.compilationStatus === "clarification_required") {
+    step = {
+      title: "CAPT needs one clarification",
+      description: "Answer the question below. This revises the existing proposal and does not launch work.",
+      label: "Answer in composer", action: "compose",
+    };
+  } else if (proposal?.state === "active" && proposal?.compilationStatus === "ready_for_approval") {
+    step = {
+      title: "Review what CAPT will do",
+      description: "The proposal has been compiled, not executed. Check its target repository and instructions, then choose whether to request HumanApproval.",
+      label: "Review compiled proposal", action: "proposal",
+    };
+  } else {
+    step = {
+      title: "Describe the work you want done",
+      description: "Choose Track as mission for ongoing work. Send compiles a proposal; it does not approve, pay for or execute anything.",
+      label: "Write a request", action: "compose",
+    };
+  }
+  $("nextStepTitle").textContent = step.title;
+  $("nextStepDescription").textContent = step.description;
+  $("nextStepButton").textContent = step.label;
+  $("nextStepButton").disabled = state.busy;
+  state.nextStepAction = step.action;
+}
+function showReviewTarget(id) {
+  $("inspector").classList.add("open");
+  $(id)?.scrollIntoView({block: "nearest", behavior: "auto"});
+}
+function followNextStep() {
+  if (state.busy) return;
+  switch (state.nextStepAction) {
+    case "compose":
+      $("promptInput").focus();
+      break;
+    case "proposal":
+      showReviewTarget("proposalText");
+      break;
+    case "approval":
+      showReviewTarget("approvalDetail");
+      break;
+    case "start":
+      startApprovedTask();
+      break;
+    case "result":
+      showReviewTarget("reviewDetail");
+      break;
+    case "mission": {
+      const mission = state.snapshot?.control?.missionId;
+      if (mission) {
+        $("kanbanFilter").value = "all";
+        $("kanbanSearch").value = mission;
+        boardView("goals");
+        refreshKanban().then(() => showMission(mission));
+      } else {
+        boardView("goals");
+      }
+      break;
+    }
+  }
 }
 
 function renderStages(proposal) {
@@ -84,6 +206,7 @@ function renderProposal(proposal) {
       ". Verify this checkout is the intended CAPT_core repository before approving. Changing the target requires recompilation."
     : root ? "Approved execution scope will be limited to: " + root : "";
   renderStages(proposal);
+  if (state.snapshot) nextStepFrom(state.snapshot, proposal);
 
   const blocked = status === "clarification_required";
   const active = proposal?.state === "active";
@@ -183,9 +306,11 @@ function renderMissions(snapshot) {
     card.type = "button";
     card.className = "mission-card active";
     const title = document.createElement("strong");
-    title.textContent = mission.missionId || "Mission";
+    const humanTitle = String(mission.objective || mission.rawRequest || "").split("\n")[0].trim();
+    title.textContent = humanTitle ? humanTitle.slice(0, 85) : (mission.missionId || "Mission");
+    card.title = mission.missionId || "";
     const meta = document.createElement("span");
-    meta.textContent = mission.state || "unknown";
+    meta.textContent = (mission.state || "unknown") + " · " + (mission.missionId || "");
     card.append(title, meta);
     card.addEventListener("click", () => {
       $("kanbanFilter").value = "all";
@@ -271,10 +396,23 @@ function renderRuntime(snapshot) {
   // Never overwrite the exact current-session approval with an unrelated
   // global summary (which lacks a DriverRun binding).
   renderApproval(snapshot?.boundApproval || null);
+  // An existing selection must not be silently promoted again.
+  if (control.approvalRequestId) {
+    $("approveProposal").disabled = true;
+    $("useOriginal").disabled = true;
+  }
+  nextStepFrom(snapshot, snapshot?.pendingProposal || state.proposal);
   if (snapshot?.approvalBindingError) {
+    $("approvalState").textContent = "Blocked";
+    const reason = document.createElement("p");
+    reason.textContent = "This approval refers to a missing or mismatched task. It cannot be approved or executed. Inspect the mission receipts and create a new, correctly bound request.";
+    $("approvalDetail").replaceChildren(reason);
+    $("approveRequest").disabled = true;
+    $("denyRequest").disabled = true;
+    $("startTask").disabled = true;
     $("startTaskStatus").textContent =
       "Blocked: " + snapshot.approvalBindingError +
-      ". Approval refers to a missing or mismatched task. Do not approve or start. Reconcile and request fresh authority.";
+      ". This request is non-runnable; no retry or automatic replay.";
   }
 }
 
@@ -299,7 +437,8 @@ async function refresh() {
   try {
     const snapshot = await api("/api/snapshot");
     renderRuntime(snapshot);
-    if (!state.proposal && snapshot.pendingProposal && !state.busy) {
+    if (snapshot.pendingProposal && !state.busy &&
+        state.proposal?.proposalId !== snapshot.pendingProposal.proposalId) {
       renderProposal(snapshot.pendingProposal);
       updateWorkflow(
         snapshot.pendingProposal.compilationStatus === "clarification_required" ?
@@ -307,6 +446,7 @@ async function refresh() {
         "Recovered live CAPT proposal from RuntimeService. Inspect the contract and continue through the approval gate."
       );
       addMessage("CAPT · recovered", "A pending governed proposal was restored from RuntimeService. No execution was replayed.", "capt");
+      nextStepFrom(snapshot, snapshot.pendingProposal);
     }
     const bots = await api("/api/bots");
     renderBots(bots);
@@ -357,6 +497,7 @@ async function sendPrompt() {
     $("composerNote").textContent = "Compilation failed; no execution was implied.";
   } finally {
     setBusy(false);
+    nextStepFrom();
   }
 }
 
@@ -398,6 +539,7 @@ async function selectProposal(basis) {
     addMessage("CAPT · error", error.message, "system");
   } finally {
     setBusy(false);
+    nextStepFrom();
   }
 }
 
@@ -626,6 +768,7 @@ async function newThread() {
     renderProposal(null);
     renderApproval(null);
     await refresh();
+    nextStepFrom();
   } catch (error) {
     addMessage("CAPT · error", error.message, "system");
   }
@@ -663,6 +806,12 @@ async function registerBot(event) {
   }
 }
 
+$("nextStepButton").addEventListener("click", followNextStep);
+$("nextStepDetails").addEventListener("click", () => {
+  const id = state.nextStepAction === "approval" ? "approvalDetail" :
+    state.nextStepAction === "result" ? "reviewDetail" : "proposalText";
+  showReviewTarget(id);
+});
 $("openMissionArchive").addEventListener("click", () => {
   $("kanbanFilter").value = "terminal";
   $("kanbanSearch").value = "";
@@ -736,8 +885,8 @@ $("closeInspector").addEventListener("click", () => $("inspector").classList.rem
 $("toggleLeft").addEventListener("click", () => $("leftRail").classList.toggle("open"));
 $("developerMode").addEventListener("change", () => {
   $("composerNote").textContent = $("developerMode").checked
-    ? "Developer mode forces OMNI → META → FORGE → SIGMA before execution approval."
-    : "Nothing executes from this box until CAPT admits the governed path.";
+    ? "Advanced mode forces the full prompt chain. Execution still needs separate approval and Start."
+    : "Send prepares a proposal. Nothing runs until explicitly approved and started.";
 });
 
 refresh();

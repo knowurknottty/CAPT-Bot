@@ -306,3 +306,66 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
 #configForm select:disabled { opacity: .55; cursor: not-allowed; }
 #configForm .config-error:not(:empty) { color: var(--danger, #b95353); }
 #configForm #catalogStatus { overflow-wrap: anywhere; }
+
+
+/* Human-first operation. Show one next decision; retain audit/advanced controls. */
+.next-step {
+  max-width: 820px;
+  margin: 0 auto 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.next-step h2 {
+  font-size: clamp(18px, 2vw, 23px);
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  margin: 6px 0 8px;
+}
+.next-step > p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 14px;
+  margin: 0;
+  max-width: 740px;
+}
+.next-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.next-step-actions button {
+  min-height: 40px;
+  font-size: 13px;
+}
+.advanced-contract, .workflow-advanced, .rail-advanced {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.advanced-contract > summary, .workflow-advanced > summary,
+.rail-advanced > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 7px 2px;
+}
+.advanced-contract[open] > summary,
+.workflow-advanced[open] > summary,
+.rail-advanced[open] > summary { color: var(--ink); }
+.advanced-contract > .panel { margin-top: 8px; }
+.rail-advanced {
+  flex: 0 0 auto;
+  margin-top: 10px;
+  padding: 7px 10px 10px;
+}
+.rail-advanced .quiet-button { width: 100%; }
+.rail-goals { flex: 1; overflow: auto; }
+.workflow-advanced .workflow-steps { margin-top: 8px; }
+.kanban-detail .advanced-contract { margin-top: 12px; }
+.conversation { padding-top: 20px; }
+@media (max-width: 760px) {
+  .next-step { padding: 14px; }
+  .next-step-actions button { flex: 1 1 140px; }
+}
