@@ -24,12 +24,29 @@ button { cursor: pointer; }
 .shell {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 232px minmax(420px, 1fr) 340px;
+  grid-template-columns: 232px minmax(0, 1fr);
   overflow: hidden;
 }
 .rail { background: var(--quiet); min-height: 100dvh; }
 .rail-left { border-inline-end: 1px solid var(--line); padding: 18px 14px; display: flex; flex-direction: column; }
-.rail-right { border-inline-start: 1px solid var(--line); padding: 18px; overflow-y: auto; }
+.rail-right {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: min(430px, 94vw);
+  z-index: 20;
+  border-inline-start: 1px solid var(--line);
+  padding: 18px;
+  overflow-y: auto;
+  transform: translateX(105%);
+  transition: transform 180ms ease;
+  box-shadow: -18px 0 38px rgb(10 15 20 / 36%);
+}
+.rail-right.open { transform: translateX(0); }
+.rail-goal-summary { cursor: pointer; padding: 8px 6px; color: var(--muted); font-size: 12px; font-weight: 650; }
+.rail-goals[open] > .rail-goal-summary { color: var(--ink); }
+.rail-goals #missionList { margin-block-start: 8px; }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--dominant); outline-offset: 3px; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 20px; letter-spacing: .08em; }
 .brand svg { width: 30px; fill: var(--dominant); }
 .brand div { display: flex; gap: 6px; align-items: baseline; }
@@ -361,7 +378,7 @@ dialog::backdrop { background: rgb(10 15 20 / 78%); }
   padding: 7px 10px 10px;
 }
 .rail-advanced .quiet-button { width: 100%; }
-.rail-goals { flex: 1; overflow: auto; }
+.rail-goals { flex: 0 1 auto; overflow-y: auto; max-height: 48vh; }
 .workflow-advanced .workflow-steps { margin-top: 8px; }
 .kanban-detail .advanced-contract { margin-top: 12px; }
 .conversation { padding-top: 20px; }

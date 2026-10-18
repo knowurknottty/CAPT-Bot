@@ -560,6 +560,18 @@ class BotOperatorController:
         grant = execution.get("approvalRequestState") or {}
         binding = (grant.get("scope") or {}).get("approvalBinding") or {}
         fields = ("missionId", "taskId", "driverRunId")
+        # A reference is not authority. Preserve the identity/status of an old
+        # request for the operator even when its durable task is unavailable.
+        request_id = control.get("approvalRequestId")
+        if request_id:
+            same_request = grant.get("requestId") == request_id
+            result["approvalReference"] = {
+                "requestId": request_id,
+                "missionId": control.get("missionId"),
+                "taskId": control.get("taskId"),
+                "state": grant.get("state", "unknown") if same_request else "unverified",
+                "expiresAt": grant.get("expiresAt") if same_request else None,
+            }
         if (grant and control.get("approvalRequestId") == grant.get("requestId")
                 and all(control.get(k) and control.get(k) == binding.get(k)
                         for k in fields)
@@ -588,6 +600,8 @@ class BotOperatorController:
                     "provider": binding.get("provider"),
                     "model": binding.get("model"),
                 }
+        if request_id and "boundApproval" not in result and "approvalBindingError" not in result:
+            result["approvalBindingError"] = "BOUND_APPROVAL_UNVERIFIED_RECONCILE_FIRST"
         for key, op in (("missions", "missions"), ("tasks", "tasks"), ("approvals", "approvals")):
             try:
                 result[key] = self._query(op, limit=1000 if key != "approvals" else 100)

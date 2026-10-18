@@ -357,6 +357,10 @@ def test_orphaned_bound_approval_is_never_runnable_or_displayed_as_valid():
     state = controller.snapshot()
     assert "boundApproval" not in state
     assert state["approvalBindingError"] == "BOUND_TASK_NOT_DURABLE_RECONCILE_FIRST"
+    assert state["approvalReference"]["requestId"] == "approval-orphan"
+    assert state["approvalReference"]["missionId"] == "goal-a"
+    assert state["approvalReference"]["state"] == "approved"
+    assert state["approvalReference"]["expiresAt"] == runtime.approval["expiresAt"]
     import pytest
     with pytest.raises(ValueError, match="BOUND_TASK"):
         controller.start_bound_task("approval-orphan")

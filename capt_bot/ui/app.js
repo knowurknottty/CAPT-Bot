@@ -65,6 +65,7 @@ function setBusy(value, note = "") {
 function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
   const control = snapshot?.control || {};
   const grant = snapshot?.boundApproval || null;
+  const reference = snapshot?.approvalReference || null;
   const run = snapshot?.execution?.driverRunState || null;
   const title = proposal?.originalPrompt?.split("\n").find(Boolean)?.trim();
   if (title && !state.recoveryMissionId) {
@@ -72,6 +73,15 @@ function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
       (title.length > 64 ? "…" : "");
   } else if (control.missionId && !state.recoveryMissionId) {
     $("threadTitle").textContent = "Mission · " + control.missionId;
+  } else if (control.activeSessionId && !state.recoveryMissionId) {
+    $("threadTitle").textContent = "Conversation · " + control.activeSessionId.slice(-8);
+  } else if (!state.recoveryMissionId) {
+    $("threadTitle").textContent = "New conversation";
+  }
+  // A restored session is not an empty new chat even if its message feed is
+  // not locally persisted. Keep the canonical next step, not the welcome pitch.
+  if (control.proposalId || control.approvalRequestId || control.missionId) {
+    $("welcome").hidden = true;
   }
   let step;
   if (state.recoveryMissionId && state.workflowPhase === "scope" &&
@@ -88,7 +98,8 @@ function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
   } else if (snapshot?.approvalBindingError) {
     step = {
       title: "This approval cannot start a task",
-      description: "The recorded approval points to a missing or mismatched task. CAPT has blocked execution. Inspect the mission receipts and create a fresh, reviewed task. Do not reuse this approval.",
+      description: "An earlier request (" + (reference?.requestId || control.approvalRequestId || "unidentified") +
+        ") is still recorded, but its executable task receipt is missing or mismatched. Nothing can run from it. Review the mission evidence before drafting a new request. No approval is carried forward.",
       label: "Inspect blocked mission",
       action: "mission",
     };
@@ -154,8 +165,13 @@ function nextStepFrom(snapshot = state.snapshot, proposal = state.proposal) {
   $("nextStepButton").disabled = state.busy;
   state.nextStepAction = step.action;
 }
+function setInspectorOpen(isOpen) {
+  $("inspector").classList.toggle("open", isOpen);
+  $("inspector").inert = !isOpen;
+  $("toggleInspector").setAttribute("aria-expanded", String(isOpen));
+}
 function showReviewTarget(id) {
-  $("inspector").classList.add("open");
+  setInspectorOpen(true);
   $(id)?.scrollIntoView({block: "nearest", behavior: "auto"});
 }
 function followNextStep() {
@@ -301,15 +317,17 @@ function renderApproval(approval) {
 }
 
 function renderMissions(snapshot) {
+  const currentMissionId = snapshot?.control?.missionId;
   const missions = rows(snapshot?.missions).filter(mission =>
-    !["completed", "failed", "cancelled"].includes(mission.state)
+    !["completed", "failed", "cancelled"].includes(mission.state) &&
+    mission.missionId !== currentMissionId
   );
   $("missionList").replaceChildren();
   $("activeGoalCount").textContent = "(" + missions.length + ")";
   if (!missions.length) {
     const empty = document.createElement("p");
     empty.className = "rail-empty";
-    empty.textContent = "No active goals. Finished work is preserved in the archive.";
+    empty.textContent = "No other open missions. Historical work remains in the archive.";
     $("missionList").append(empty);
     return;
   }
@@ -415,9 +433,15 @@ function renderRuntime(snapshot) {
   }
   nextStepFrom(snapshot, snapshot?.pendingProposal || state.proposal);
   if (snapshot?.approvalBindingError) {
-    $("approvalState").textContent = "Blocked";
+    const reference = snapshot.approvalReference || {};
+    const expires = Date.parse(reference.expiresAt || "");
+    const expired = Number.isFinite(expires) && expires <= Date.now();
+    $("approvalState").textContent = expired ? "Expired · blocked" : "Blocked · not executable";
     const reason = document.createElement("p");
-    reason.textContent = "This approval refers to a missing or mismatched task. It cannot be approved or executed. Inspect the mission receipts and create a new, correctly bound request.";
+    reason.textContent = "Earlier request " + (reference.requestId || control.approvalRequestId || "unknown") +
+      " has no verified, durable task binding. " +
+      (expired ? "Its approval period has also expired. " : "") +
+      "The original request cannot be approved or executed. Inspect the mission receipts before preparing new authority.";
     $("approvalDetail").replaceChildren(reason);
     $("approveRequest").disabled = true;
     $("denyRequest").disabled = true;
@@ -452,12 +476,17 @@ async function refresh() {
     if (snapshot.pendingProposal && !state.busy &&
         state.proposal?.proposalId !== snapshot.pendingProposal.proposalId) {
       renderProposal(snapshot.pendingProposal);
-      updateWorkflow(
-        snapshot.pendingProposal.compilationStatus === "clarification_required" ?
-          "scope" : "approval",
-        "Recovered live CAPT proposal from RuntimeService. Inspect the contract and continue through the approval gate."
-      );
-      addMessage("CAPT · recovered", "A pending governed proposal was restored from RuntimeService. No execution was replayed.", "capt");
+      if (snapshot.approvalBindingError) {
+        updateWorkflow("evidence", "Restored proposal is reference material only. Its prior approval is blocked; inspect mission receipts before any new request.");
+        addMessage("CAPT · recovered", "Earlier work was restored, but its approval cannot be reused. No approval or execution was replayed.", "capt");
+      } else {
+        updateWorkflow(
+          snapshot.pendingProposal.compilationStatus === "clarification_required" ?
+            "scope" : "approval",
+          "Recovered live CAPT proposal from RuntimeService. Inspect the contract and continue through the approval gate."
+        );
+        addMessage("CAPT · recovered", "A pending governed proposal was restored from RuntimeService. No execution was replayed.", "capt");
+      }
       nextStepFrom(snapshot, snapshot.pendingProposal);
     }
     const bots = await api("/api/bots");
@@ -466,6 +495,9 @@ async function refresh() {
     $("statusDot").classList.remove("ok");
     $("statusText").textContent = "Runtime unavailable";
     $("composerNote").textContent = error.message;
+    $("nextStepTitle").textContent = "CAPT is not connected";
+    $("nextStepDescription").textContent = "Current mission and approval state cannot be verified. No task may be started from this screen until the runtime reconnects.";
+    $("nextStepButton").disabled = true;
   }
 }
 
@@ -820,7 +852,11 @@ async function registerBot(event) {
 
 $("nextStepButton").addEventListener("click", followNextStep);
 $("nextStepDetails").addEventListener("click", () => {
-  const id = state.nextStepAction === "approval" ? "approvalDetail" :
+  if (state.nextStepAction === "mission" || state.nextStepAction === "compose") {
+    followNextStep();
+    return;
+  }
+  const id = state.nextStepAction === "approval" || state.nextStepAction === "start" ? "approvalDetail" :
     state.nextStepAction === "result" ? "reviewDetail" : "proposalText";
   showReviewTarget(id);
 });
@@ -838,7 +874,7 @@ $("workflowNextAction").addEventListener("click", () => {
     $("workflowBackToEvidence").click();
     return;
   }
-  $("inspector").classList.add("open");
+  setInspectorOpen(true);
   const target = state.workflowPhase === "verify" ? $("reviewDetail") :
     state.workflowPhase === "approval" ? $("proposalText") : $("runtimeState");
   target?.scrollIntoView({block: "nearest", behavior: "auto"});
@@ -892,8 +928,11 @@ $("copyProposal").addEventListener("click", async () => {
     await navigator.clipboard.writeText(state.proposal.proposedPrompt);
   }
 });
-$("toggleInspector").addEventListener("click", () => $("inspector").classList.toggle("open"));
-$("closeInspector").addEventListener("click", () => $("inspector").classList.remove("open"));
+$("toggleInspector").addEventListener("click", () => setInspectorOpen(!$("inspector").classList.contains("open")));
+$("closeInspector").addEventListener("click", () => setInspectorOpen(false));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && $("inspector").classList.contains("open")) setInspectorOpen(false);
+});
 $("toggleLeft").addEventListener("click", () => $("leftRail").classList.toggle("open"));
 $("developerMode").addEventListener("change", () => {
   $("composerNote").textContent = $("developerMode").checked
