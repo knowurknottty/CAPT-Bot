@@ -34,6 +34,8 @@ Expected evidence on the reviewed pair: 26 identical modules, 2 intentional Core
 
 **Additional regression evidence:** With the tested Core available, the full historical Stage-A compatibility suite (including the five new Stage-B negative cases) returned **362 passed, 8 skipped**. The documentation checker returned **26 files and 126 relative links with no broken targets, anchors or fences**.
 
+**Fresh-checkout verification:** The merged CAPT-Bot main commit `450fa9b80e66070503a70be9b2906bd22dbd069c` and pinned Core commit were cloned using `git clone --local` into a new temporary directory under the authorized CAPT workspace. Running the exact Stage-B command from these tracked-source checkouts passed **6 tests** with the Core import check satisfied. The disposable copies were cleaned up. This proves clean **source checkout** reproducibility using the existing macOS Python dependencies, **not** a fresh dependency installation or release package.
+
 **Fail-closed policy:** never loosen or auto-refresh the pinned digests to turn a red compatibility result green. Review the actual source differences first, then update the ledger with explicit rationale, repeat the isolated integration proof and obtain independent verification. A mismatched Core revision must not silently fall back to copying Bot's old runtime code.
 
 ## What Stage-B does not prove
