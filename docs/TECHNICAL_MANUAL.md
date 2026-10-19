@@ -36,6 +36,10 @@ A typical path is `new_chat → configure → submit_prompt → clarify (if requ
 
 `~/.capt/ui/providers.json` is read by `read_provider_catalog`. Only provider IDs, sanitized names, allowed kinds and configured model IDs reach the browser. A valid catalog is **not** a guarantee of connectivity, billing allowance or model availability.
 
+## Source equivalence and Core hardening
+
+The [R5 Stage-B gate](architecture/CAPT_BOT_R5_STAGE_B_SOURCE_ADMISSION.md) prevents historical Bot shadow modules from silently replacing current Core. Two Core backend modules have reviewed newer hardening; the ledger is fail-closed on unreviewed revisions. This is an evidence gate, not an extension loader.
+
 ## Tests and version claims
 
 The R5 Stage-A script extends Python module search *inside pytest only*. It checks compatibility against a specific Core checkout; it does not inject the Bot into the real running runtime. Historical `333 passed, 8 skipped` appears in the release matrix, **not rerun in this audit**. See [Verification](VERIFICATION.md), [Compatibility](COMPATIBILITY.md) and [OMEGA audit](audit/OMEGA_2026-10-19.md).

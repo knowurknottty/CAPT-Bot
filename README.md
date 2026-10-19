@@ -50,6 +50,10 @@ curl --fail --silent http://127.0.0.1:8765/api/health
 
 Expected bridge response: `{"ok":true}`. This **does not verify** Core authorization, Bot registration, provider health or end-to-end execution. Open [http://127.0.0.1:8765](http://127.0.0.1:8765) only on the same machine. Do **not** expose or port-forward this privileged interface.
 
+## R5 Stage-B source admission
+
+The [reviewed Stage-B checkpoint](docs/architecture/CAPT_BOT_R5_STAGE_B_SOURCE_ADMISSION.md) pins the exact current-Core source pair, rejects unreviewed shadow-module drift, and runs a real isolated Core registration test. It is **not** an extension installer or full R5 release acceptance gate.
+
 ## Authority model
 
 ```text
