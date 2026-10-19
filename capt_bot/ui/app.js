@@ -15,6 +15,7 @@ const state = {
   workflowPhase: null,
   providerCatalog: null,
   nextStepAction: "compose",
+  refreshFailureNote: null,
 };
 
 async function api(path, options = {}) {
@@ -473,6 +474,15 @@ async function refresh() {
   try {
     const snapshot = await api("/api/snapshot");
     renderRuntime(snapshot);
+    // A previous transient transport error is not the current state after
+    // CAPT has delivered a fresh authoritative snapshot. Do not overwrite
+    // more recent operator notes (e.g. scope clarifications).
+    if (state.refreshFailureNote &&
+        $("composerNote").textContent === state.refreshFailureNote) {
+      $("composerNote").textContent =
+        "RuntimeService reconnected. Review the current approval before execution.";
+    }
+    state.refreshFailureNote = null;
     if (snapshot.pendingProposal && !state.busy &&
         state.proposal?.proposalId !== snapshot.pendingProposal.proposalId) {
       renderProposal(snapshot.pendingProposal);
@@ -489,12 +499,21 @@ async function refresh() {
       }
       nextStepFrom(snapshot, snapshot.pendingProposal);
     }
-    const bots = await api("/api/bots");
-    renderBots(bots);
-  } catch (error) {
+    // The optional Bot registry is not the RuntimeService authority check.
+    // An unavailable Bot list must not incorrectly disable the live runtime.
+    try {
+      const bots = await api("/api/bots");
+      renderBots(bots);
+    } catch (_error) {
+      $("botList").textContent =
+        "Bot registry temporarily unavailable; RuntimeService remains connected.";
+    }
+  } catch (_error) {
     $("statusDot").classList.remove("ok");
     $("statusText").textContent = "Runtime unavailable";
-    $("composerNote").textContent = error.message;
+    state.refreshFailureNote =
+      "RuntimeService snapshot unavailable. No task can start until reconnected.";
+    $("composerNote").textContent = state.refreshFailureNote;
     $("nextStepTitle").textContent = "CAPT is not connected";
     $("nextStepDescription").textContent = "Current mission and approval state cannot be verified. No task may be started from this screen until the runtime reconnects.";
     $("nextStepButton").disabled = true;
