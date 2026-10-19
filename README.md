@@ -1,62 +1,79 @@
 # CAPT-Bot
 
-CAPT-Bot is the separately versioned governed synthetic-worker/product layer for CAPT. It owns Bot identity, cognition, skills, delegation, Lab Board/standup, Bot-specific execution integration, and the operator-facing Bot workflow while preserving CAPT Core as the single authority, execution, evidence, verification, and claim plane.
+**Governed synthetic workers. One CAPT authority. Evidence before claims.**
 
-## Current status
+CAPT-Bot is the separately versioned Bot product layer for [CAPT Core](https://github.com/knowurknottty/CAPT_core). It supplies Bot identity, an operator-facing local cockpit, mission/task review, and Bot-domain building blocks for cognition, skills, delegation, sandboxing, and cloud workflows. It **does not** replace CAPT Core's RuntimeService, EventStore, ToolBroker, approvals, or verification authority.
 
-The repository began as a verified project-layer extraction from `knowurknottty/CAPT_core` and still preserves that exact isolation lineage. The next implementation tranche is **R5 Convergence**: semantically rebase the verified R1-R4 Bot work onto current CAPT Core, then extract Bot-owned behavior behind the smallest generic Core integration seams instead of maintaining stale shadow copies of shared Core files.
+> **Maturity: pre-release / R5 convergence incomplete.** This source tree contains implemented components and historical test evidence. A full current-Core R5 integration, autonomous Bot activation, and unattended GitHub issue fixing are **not release-proven**. The compatibility manifest explicitly records `realR5Acceptance: NOT_RUN`.
 
-Start here:
+## Choose your path
 
-- `docs/PUBLIC_USER_GUIDE.md` — pre-release human guide for the local cockpit, Bot identity, governed chat and limitations.
-- `docs/AGENT_OPERATOR_GUIDE.md` — agent contract for sequential GitHub issue repair, approvals, evidence, and genuine task-specific recursion.
-- `docs/RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md` — five-chat council/independent review plan with explicit release blockers.
-- `CAPT_BOT_COMPATIBILITY.json` — pre-release design-time compatibility baseline, not production R5 admission.
-- `scripts/run_r5_stage_a_compatibility.py` — reproducible test-only 333-test historical compatibility suite; NOT R5 full acceptance.
+| I want to… | Start here |
+| --- | --- |
+| Understand CAPT-Bot in two minutes | [ELI5 explanation](docs/ELI5_GUIDE.md) |
+| Run the local cockpit with an existing CAPT Core installation | [Quickstart](docs/QUICKSTART.md) |
+| Set up prerequisites safely | [Installation and prerequisites](docs/INSTALLATION.md) |
+| Register identity, work with governed prompts, and inspect missions | [Human operator guide](docs/PUBLIC_USER_GUIDE.md) |
+| Operate as an agent under CAPT governance | [Agent operating contract](docs/AGENT_OPERATOR_GUIDE.md) |
+| Understand the architecture and domain boundaries | [Architecture](docs/ARCHITECTURE.md) and [technical manual](docs/TECHNICAL_MANUAL.md) |
+| Diagnose an issue | [Troubleshooting](docs/TROUBLESHOOTING.md) |
+| Evaluate compatibility or readiness | [Compatibility](docs/COMPATIBILITY.md) and [release matrix](docs/RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md) |
+| Browse every public document | **[Documentation index](docs/START_HERE.md)** |
 
-- `docs/architecture/CAPT_BOT_CONVERGENCE_R5.md` — authoritative R5 architecture/convergence specification.
-- `docs/superpowers/plans/2026-09-17-capt-bot-r5-deepseek44-sdr.md` — System Design + Delivery Requirements and 44-vessel DeepSeek implementation handoff.
-- `docs/architecture/CAPT_BOT_FOUNDATION_R1.md` — original Bot foundation semantics.
-- `docs/architecture/CAPT_BOT_CREW_STANDUP_R2.md` — crew/delegate/standup semantics.
-- `docs/architecture/CAPT_BOT_CLOUDFLARE_R3.md` — Cloudflare governed execution boundary.
-- `docs/architecture/CAPT_BOT_CLOUDFLARE_WORKFLOWS_R4.md` — Cloudflare Workflows orchestration boundary.
-- `docs/superpowers/specs/2026-09-09-inversion-sandbox-r2-persistent-leases-design.md` — persistent governed InversionSandbox design.
-- `docs/superpowers/verification/2026-09-09-inversion-sandbox-r2.md` — historical verified sandbox evidence at the isolation-era Core state.
+## What is implemented in this repository?
 
-## Exact isolation provenance
+- **Local operator bridge:** `python3 -m capt_bot.ui_server` serves a loopback-only web cockpit and relays authorized commands to an existing CAPT Core RuntimeService.
+- **Bot identity registration path:** the controller builds a validated `BotManifest` request for Core's `register_bot` command. Registration is **not activation** and grants **no execution permission**.
+- **Governed operator flow:** chat context, provider configuration, prompt submission/clarification, proposal selection, approval decision, bound task start, and provider-result review are coordinated through Core APIs.
+- **Inspection and recovery:** mission/task Kanban projections, bounded DriverRun inspection, mission disposition preview/confirmation, and non-executable successor-mission drafts.
+- **Domain components and tests:** Bot, cognition, skill, delegation, Lab Board, sandbox and Cloudflare-related code remains versioned here; compatibility and integration readiness vary by feature.
 
-- Base Core commit: `3be3fd6cc1274f7a7935d35b83641fc5b9dc82e8`
-- Project source commit: `c93200626b621bf7a27c1fa6cfcbf04773121c35`
-- Added project-owned files are preserved at their original CAPT paths.
-- Historical modifications to pre-existing shared Core files are preserved in `integration/CAPT_CORE.patch`.
-- `SOURCE_PROVENANCE.json` SHA-256 binds the isolated payload.
+These statements describe **source-present implementations**, not proof that every feature is installed or working in a particular resident CAPT Core version.
 
-The historical patch is provenance and reconstruction evidence. **Do not blindly apply it to current CAPT Core.** Current Core has materially changed since the isolation point, including authority hardening, newer projections, composition changes, provider/operator work, provenance fixes, and human-answer/receipt separation. R5 requires a semantic hunk-by-hunk rebase and explicit disposition of every shared path.
+## First local cockpit session
 
-## R5 governing invariant
+**Requires a running, compatible CAPT Core RuntimeService**, its authorized Unix socket/token file, and a Python environment with Core's runtime client available.
 
-> Bot identity, cognition, collaboration, and UX may be independently versioned; authority, consequential mutation, external execution, evidence, verification, and terminal truth remain CAPT-owned.
+```zsh
+python3 -m capt_bot.ui_server \
+  --core-root /absolute/path/to/CAPT_core \
+  --sock "$HOME/.capt/runtime.sock" \
+  --token-file "$HOME/.capt/runtime.token" \
+  --host 127.0.0.1 --port 8765
+```
 
-CAPT-Bot must never create a second `RuntimeService`, `EventStore`, `ToolBroker`, capability/approval authority, verification plane, or claim authority.
+On a separate local terminal, a **bridge-only** smoke check is:
 
-## Historical deterministic assembly
+```zsh
+curl --fail --silent http://127.0.0.1:8765/api/health
+```
 
-The isolation snapshot can still be reconstructed for provenance/debugging only:
+Expected bridge response: `{"ok":true}`. This **does not verify** Core authorization, Bot registration, provider health or end-to-end execution. Open [http://127.0.0.1:8765](http://127.0.0.1:8765) only on the same machine. Do **not** expose or port-forward this privileged interface.
 
-1. Check out CAPT Core at the historical base commit.
-2. Apply `integration/CAPT_CORE.patch`.
-3. Overlay the project-owned paths from this repository.
-4. Run the historical project verification gates.
+## Authority model
 
-That procedure reconstructs the isolated 2026-09-09 lineage. It is **not** the R5 implementation recipe.
+```text
+Human → CAPT-Bot local UI/controller → CAPT Core RuntimeService
+                                         ├─ authoritative EventStore
+                                         ├─ HumanApproval/capability gates
+                                         ├─ provider and tool execution
+                                         └─ verification / claim decisions
+```
 
-## R5 implementation path
+A Bot name, role, model preference, council opinion, or generated plan is **not** authority. Ambiguous external effects must be reconciled before retry; approving, merging, deploying, or declaring success requires the corresponding authoritative evidence.
 
-1. Inventory local and remote CAPT-Bot/Core state and freeze exact SHAs.
-2. Classify every historical shared-Core hunk as already-upstream, generic Core seam, Bot-domain behavior, or unresolved.
-3. Prove the historical Bot feature set semantically rebased onto current Core.
-4. Extract Bot-owned implementation behind the minimal immutable Core integration seam while preserving one CAPT runtime.
-5. Close Bot lifecycle, governed learning, delegation, request-to-result orchestration, human-first answers/receipts, sandbox, Cloudflare, and restart/reconciliation semantics.
-6. Run the complete current-head acceptance matrix and record exact release evidence.
+## Source lineage and release constraints
 
-See the R5 spec and SDR above for the full requirements, vessel topology, acceptance scenarios, merge gates, and stop conditions.
+This repo preserves its exact historical CAPT Core extraction in `SOURCE_PROVENANCE.json`, `integration/BASE_COMMIT`, `integration/SOURCE_COMMIT`, and `integration/CAPT_CORE.patch`. **Never apply the historical patch wholesale to current Core.** The [R5 convergence specification](docs/architecture/CAPT_BOT_CONVERGENCE_R5.md) defines the required semantic rebase and extraction boundary.
+
+The historical compatibility suite is **test-only**:
+
+```zsh
+python3 scripts/run_r5_stage_a_compatibility.py --core-root /absolute/path/to/CAPT_core
+```
+
+It does not install a runtime plugin, deploy a service, or certify R5. See [Verification](docs/VERIFICATION.md).
+
+**License caution:** no root `LICENSE` file was present in the GitHub tree audited on 2026-10-19. Public visibility alone does not grant a license to redistribute or commercially reuse source. Licensing is a maintainer decision; do not infer it from this README.
+
+**Source-reviewed against:** CAPT-Bot `main` `0136336538f2f1c2a1daadb55303ee54c60531ac` (2026-10-19). Local live execution was unavailable during this documentation pass; see the [documentation audit receipt](docs/audit/OMEGA_2026-10-19.md).
