@@ -12,6 +12,8 @@
 
 **Task references:** [FAQ](FAQ.md), [Glossary](GLOSSARY.md), [Configuration](CONFIGURATION.md), [API](API_REFERENCE.md), [Verification](VERIFICATION.md), [Release status](RELEASES_AND_MIGRATIONS.md).
 
+**New current-Core integration checkpoint:** [R5 Stage-B source admission](architecture/CAPT_BOT_R5_STAGE_B_SOURCE_ADMISSION.md) (not release certification).
+
 **Canonical existing design history:** [R1 foundation](architecture/CAPT_BOT_FOUNDATION_R1.md), [R2 crew](architecture/CAPT_BOT_CREW_STANDUP_R2.md), [R3 Cloudflare](architecture/CAPT_BOT_CLOUDFLARE_R3.md), [R4 Workflows](architecture/CAPT_BOT_CLOUDFLARE_WORKFLOWS_R4.md), [R5 convergence](architecture/CAPT_BOT_CONVERGENCE_R5.md).
 
 ## Read status labels correctly

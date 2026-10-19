@@ -23,6 +23,7 @@ def pages(root: Path) -> list[Path]:
     candidates = [root / "README.md", root / "CONTRIBUTING.md"]
     candidates.extend(sorted((root / "docs").glob("*.md")))
     candidates.extend(sorted((root / "docs" / "audit").glob("*.md")))
+    candidates.append(root / "docs" / "architecture" / "CAPT_BOT_R5_STAGE_B_SOURCE_ADMISSION.md")
     return [p for p in candidates if p.is_file()]
 
 

@@ -1,0 +1,183 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "REVIEWED_SOURCE_PAIR_STAGE_B_ONLY",
+  "coreRepo": "knowurknottty/CAPT_core",
+  "coreCommit": "3f11800c31252b8e9d2037fc29cf3c195dcfb7f4",
+  "botSourceCommit": "e5179faf4b64715a59912dcbf5aa851221be8077",
+  "contract": "Core authoritative; Core hardened modules cannot be overwritten by historical Bot copies",
+  "modules": [
+    {
+      "path": "capt_runtime/aggregates/bot.py",
+      "mode": "identical",
+      "botSha256": "f433b913a8bb77029bbee0b9dff89c8d98f3d5f41ffcf670e2cda526d58fcfc9",
+      "coreSha256": "f433b913a8bb77029bbee0b9dff89c8d98f3d5f41ffcf670e2cda526d58fcfc9"
+    },
+    {
+      "path": "capt_runtime/aggregates/cloudflare_resource_binding.py",
+      "mode": "identical",
+      "botSha256": "d1ef0c0243fa5970130586f5247c21edd38fa0b96810b18685bb98cd1629b13a",
+      "coreSha256": "d1ef0c0243fa5970130586f5247c21edd38fa0b96810b18685bb98cd1629b13a"
+    },
+    {
+      "path": "capt_runtime/aggregates/cognitive_candidate.py",
+      "mode": "identical",
+      "botSha256": "6579196755a7d658376693a801a9bb08c90b7325ad7fdb05bbdc2fdc8c5d27d6",
+      "coreSha256": "6579196755a7d658376693a801a9bb08c90b7325ad7fdb05bbdc2fdc8c5d27d6"
+    },
+    {
+      "path": "capt_runtime/aggregates/delegate_assignment.py",
+      "mode": "identical",
+      "botSha256": "8a7c1ceb73503a8bdf2f2657fc33a7250a6c5792d8ef6073bb075f029fa85cac",
+      "coreSha256": "8a7c1ceb73503a8bdf2f2657fc33a7250a6c5792d8ef6073bb075f029fa85cac"
+    },
+    {
+      "path": "capt_runtime/aggregates/lab_board.py",
+      "mode": "identical",
+      "botSha256": "a29999ea350d5afedbcddd719773770efca940a8060922883f6179879d5a1f0e",
+      "coreSha256": "a29999ea350d5afedbcddd719773770efca940a8060922883f6179879d5a1f0e"
+    },
+    {
+      "path": "capt_runtime/aggregates/sandbox_lease.py",
+      "mode": "identical",
+      "botSha256": "f8a9b6deaa8bd519413458e2ee9e1f405d6b766882ba7c1d69047f7bec984265",
+      "coreSha256": "f8a9b6deaa8bd519413458e2ee9e1f405d6b766882ba7c1d69047f7bec984265"
+    },
+    {
+      "path": "capt_runtime/aggregates/skill_candidate.py",
+      "mode": "identical",
+      "botSha256": "834bc09540ad388324752a7394df8e41f22cba515fcc742f82c04ee4d88b1e6d",
+      "coreSha256": "834bc09540ad388324752a7394df8e41f22cba515fcc742f82c04ee4d88b1e6d"
+    },
+    {
+      "path": "capt_runtime/bot_locality.py",
+      "mode": "identical",
+      "botSha256": "7ec6dfa24f44c3a229eab2a47e62c8400a08d239fe6a6091da002d60cabff41e",
+      "coreSha256": "7ec6dfa24f44c3a229eab2a47e62c8400a08d239fe6a6091da002d60cabff41e"
+    },
+    {
+      "path": "capt_runtime/cloudflare_resource_adoption.py",
+      "mode": "identical",
+      "botSha256": "f005c4790f3cf3b2b0fbc75686bc784bbdfee4724f3e97ebb7a069993861e1ba",
+      "coreSha256": "f005c4790f3cf3b2b0fbc75686bc784bbdfee4724f3e97ebb7a069993861e1ba"
+    },
+    {
+      "path": "capt_runtime/lab_standup.py",
+      "mode": "identical",
+      "botSha256": "8c17d0f797e40ceb153034c532581b0c8a929f8385b823497b1887c2c22d9b99",
+      "coreSha256": "8c17d0f797e40ceb153034c532581b0c8a929f8385b823497b1887c2c22d9b99"
+    },
+    {
+      "path": "capt_runtime/sandbox_reconciliation.py",
+      "mode": "identical",
+      "botSha256": "7436e86d75946b2d68af02ee9b4c354959c50842630b307e21eb5393b45656b3",
+      "coreSha256": "7436e86d75946b2d68af02ee9b4c354959c50842630b307e21eb5393b45656b3"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/cloudflare_terminal.py",
+      "mode": "identical",
+      "botSha256": "6ca61dab51a76f5fe9ab5273ccac07351874cc142d05be107f03e51f1eb0d9f1",
+      "coreSha256": "6ca61dab51a76f5fe9ab5273ccac07351874cc142d05be107f03e51f1eb0d9f1"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/inversion_sandbox_lifecycle.py",
+      "mode": "identical",
+      "botSha256": "2ce4a69859f58f7c4fe9a777d1062977bda1240ed4c833d270e9c95a3242ff75",
+      "coreSha256": "2ce4a69859f58f7c4fe9a777d1062977bda1240ed4c833d270e9c95a3242ff75"
+    },
+    {
+      "path": "capt_runtime/tools/adapters/inversion_sandbox_terminal.py",
+      "mode": "identical",
+      "botSha256": "dc9eefb5bef853addbad80b0adbe7abf0a9ba175c43089b44fb369c7d3019b3f",
+      "coreSha256": "dc9eefb5bef853addbad80b0adbe7abf0a9ba175c43089b44fb369c7d3019b3f"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare.py",
+      "mode": "core_hardened",
+      "botSha256": "20e3d1d1199939eec994cf26dc7b2603168c0d2588594a240daf0845ad6aab39",
+      "coreSha256": "8a7d627af2b0a9df20305c8b64dd73ded8ba7cfcf4999293db61def597665434"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_ai_catalog.py",
+      "mode": "identical",
+      "botSha256": "4c4f7e33515c161c55b27bbcb74a480f759021aea67bfd7699aebf7b8ba090af",
+      "coreSha256": "4c4f7e33515c161c55b27bbcb74a480f759021aea67bfd7699aebf7b8ba090af"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_artifacts.py",
+      "mode": "identical",
+      "botSha256": "fdff09306d7082112f66645ad12d11e97870598a2f9b9b2c76144e505fb5a469",
+      "coreSha256": "fdff09306d7082112f66645ad12d11e97870598a2f9b9b2c76144e505fb5a469"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_planner.py",
+      "mode": "identical",
+      "botSha256": "198f5c70fe59395af792f5228d4c7354ba3c364e3522cd5c90237e80ac62453a",
+      "coreSha256": "198f5c70fe59395af792f5228d4c7354ba3c364e3522cd5c90237e80ac62453a"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_router.py",
+      "mode": "identical",
+      "botSha256": "0878eb140377dbb5e41192a7e2913a17a0e7094efa9bdf9fa871e01c18b98d60",
+      "coreSha256": "0878eb140377dbb5e41192a7e2913a17a0e7094efa9bdf9fa871e01c18b98d60"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_free_tier.py",
+      "mode": "identical",
+      "botSha256": "3a269ee67f3ebb5d1cc7cca0463cf281a9f7cbf1d890874d9ab213f8b050744f",
+      "coreSha256": "3a269ee67f3ebb5d1cc7cca0463cf281a9f7cbf1d890874d9ab213f8b050744f"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_native.py",
+      "mode": "identical",
+      "botSha256": "8b7e54a23407c09ef1cd6bfce76a1df90e98bfea4d48bea7e4fdc8cef676677b",
+      "coreSha256": "8b7e54a23407c09ef1cd6bfce76a1df90e98bfea4d48bea7e4fdc8cef676677b"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_native_api.py",
+      "mode": "identical",
+      "botSha256": "c97dec74ecfb18a7c6885b14ebb9b32fce263bb68b01ff62d0368b7e5287f241",
+      "coreSha256": "c97dec74ecfb18a7c6885b14ebb9b32fce263bb68b01ff62d0368b7e5287f241"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_resource_inventory.py",
+      "mode": "identical",
+      "botSha256": "0c2e599effa0a0c176d5f85c192bf75be2d2ee0462bd67cd597f064420a3f48b",
+      "coreSha256": "0c2e599effa0a0c176d5f85c192bf75be2d2ee0462bd67cd597f064420a3f48b"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_usage.py",
+      "mode": "identical",
+      "botSha256": "b295ca358f1beeed86cc83c3f9479b4c798e94e4d507beb3cc0fd660aabef707",
+      "coreSha256": "b295ca358f1beeed86cc83c3f9479b4c798e94e4d507beb3cc0fd660aabef707"
+    },
+    {
+      "path": "capt_runtime/tools/backends/cloudflare_workflows.py",
+      "mode": "identical",
+      "botSha256": "f5606daf3e61bb6df34b35302ada1b3adfb3f45bc3496ad21e5272565011eb9d",
+      "coreSha256": "f5606daf3e61bb6df34b35302ada1b3adfb3f45bc3496ad21e5272565011eb9d"
+    },
+    {
+      "path": "capt_runtime/tools/backends/inversion_guardian.py",
+      "mode": "core_hardened",
+      "botSha256": "d5ef3a598736ffc2bb8053e2880a79cf1fdff1b7eaa723e625744f8a049df78f",
+      "coreSha256": "d058ae2350d5509e385c075668d47b74b09b843ca77e8271e4432ad8692c9dee"
+    },
+    {
+      "path": "capt_runtime/tools/backends/inversion_sandbox.py",
+      "mode": "identical",
+      "botSha256": "ea1a92af1948b665a5e74d0fa9854045fadf245f5786f17c6364607fa688966b",
+      "coreSha256": "ea1a92af1948b665a5e74d0fa9854045fadf245f5786f17c6364607fa688966b"
+    },
+    {
+      "path": "capt_runtime/tools/sandbox_broker_hooks.py",
+      "mode": "identical",
+      "botSha256": "8bedae4155579d8a619839aded4a147bea39f0c3662676a15475af395d07cdbd",
+      "coreSha256": "8bedae4155579d8a619839aded4a147bea39f0c3662676a15475af395d07cdbd"
+    }
+  ],
+  "fullR5Acceptance": "NOT_RUN",
+  "notes": [
+    "Stage-B source admission only; no runtime extension installed.",
+    "Exact code digests fail closed on unreviewed drift."
+  ]
+}

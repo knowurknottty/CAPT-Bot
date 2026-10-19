@@ -41,6 +41,10 @@ For each gate record: UTC time; Bot SHA; Core SHA; OS/Python; exact command; exi
 
 Run `python3 scripts/check_docs.py` and `python3 -m unittest discover -s tests -p test_docs_integrity.py` for repeatable docs QA. The read-only [GitHub workflow](../.github/workflows/docs-integrity.yml) is included; a hosted run must be confirmed separately.
 
+## R5 Stage-B source admission
+
+`python3 scripts/run_r5_stage_b_integration.py --core-root /absolute/path/to/CAPT_core` requires the reviewed Core commit. It checks a signed-by-digest **source ledger** (not a cryptographic signature), confirms Core owns the loaded runtime modules, then runs a real temporary-runtime Bot registration plus five negative source-drift tests. Six tests passed in the 2026-10-19 local engineering run. See [the Stage-B report](architecture/CAPT_BOT_R5_STAGE_B_SOURCE_ADMISSION.md). This does not prove R5 extension composition.
+
 ## Release requirement
 
 The actual Core+Bot R5 semantic integration, live registration/approval workflow, denied-action safety, ambiguity/restart recovery, issue-to-PR closeout, security/adversarial verification, and clean-room human/agent onboarding still require separate exact-HEAD receipts. [Release matrix](RELEASE_READINESS_REVIEW_MATRIX_2026-10-08.md) · [Audit receipt](audit/OMEGA_2026-10-19.md).
