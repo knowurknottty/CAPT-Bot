@@ -7,7 +7,7 @@
 - Default bind: `127.0.0.1:8765`. `--host` accepts `127.0.0.1`, `localhost` or `::1` only.
 - Every request requires one allowed `Host` header. Where provided, `Origin` must match its exact local HTTP origin. Other origins return `403`.
 - POST bodies must have `Content-Type: application/json` and encode a JSON object of at most **1 MiB**.
-- Success handlers return JSON with status `200`. Wrong route returns `404`; validation errors `400`; other errors can return `500`. Do not assume every Core refusal uses HTTP `403`: application-layer receipts may carry status/classification.
+- Success handlers return JSON with status `200`. Wrong route returns `404`; validation errors `400`; unexpected errors return `500` with fixed `{"error":"internal_error"}` rather than raw exception text (2026-10-19 hardening). Do not assume every Core refusal uses HTTP `403`: application-layer receipts may carry status/classification.
 - `/api/health` verifies the **bridge** only. It does not prove authenticated Core connectivity.
 
 ## Read routes

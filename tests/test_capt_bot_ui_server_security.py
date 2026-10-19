@@ -2,6 +2,7 @@
 import http.client
 import json
 import threading
+import pytest
 from contextlib import contextmanager
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -87,3 +88,33 @@ def test_dns_rebinding_host_is_denied_before_runtime_operation():
         response.read()
         conn.close()
         assert controller.register_calls == []
+
+
+def test_unexpected_runtime_exception_body_is_sanitized():
+    class SecretThrower:
+        def bots(self):
+            raise RuntimeError("secret-token-should-never-appear-in-json")
+        def new_chat(self):
+            raise RuntimeError("secret-token-should-never-appear-in-json")
+
+    server = build_server(SecretThrower(), port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        root = f"http://127.0.0.1:{server.server_address[1]}"
+        requests = [
+            Request(root + "/api/bots"),
+            Request(root + "/api/chat/new", method="POST", data=b"{}",
+                    headers={"Content-Type": "application/json"}),
+        ]
+        for request in requests:
+            with pytest.raises(HTTPError) as caught:
+                urlopen(request, timeout=4)
+            assert caught.value.code == 500
+            body = caught.value.read().decode("utf-8")
+            assert "secret-token" not in body
+            assert json.loads(body) == {"error": "internal_error"}
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

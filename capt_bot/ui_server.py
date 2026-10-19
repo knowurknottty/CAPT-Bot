@@ -169,8 +169,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
         except ValueError as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
-        except Exception as exc:
-            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+        except Exception:
+            # Never serialize unknown Core/runtime errors into the browser.
+            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "internal_error"})
 
     def do_POST(self) -> None:
         if not self._origin_allowed():
@@ -252,8 +253,9 @@ class BotUiHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, result)
         except (ValueError, KeyError) as exc:
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
-        except Exception as exc:
-            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+        except Exception:
+            # Never serialize unknown Core/runtime errors into the browser.
+            self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "internal_error"})
 
 
 def build_server(

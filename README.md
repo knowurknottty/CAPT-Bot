@@ -74,6 +74,10 @@ python3 scripts/run_r5_stage_a_compatibility.py --core-root /absolute/path/to/CA
 
 It does not install a runtime plugin, deploy a service, or certify R5. See [Verification](docs/VERIFICATION.md).
 
+## Documentation integrity
+
+Run the repeatable stdlib-only local gate with `python3 scripts/check_docs.py` and its regression tests with `python3 -m unittest discover -s tests -p test_docs_integrity.py`. A least-privileged [documentation CI workflow](.github/workflows/docs-integrity.yml) checks these on documentation-changing pushes/PRs. This is **documentation QA**, not a Core/Bot production acceptance gate.
+
 **License caution:** no root `LICENSE` file was present in the GitHub tree audited on 2026-10-19. Public visibility alone does not grant a license to redistribute or commercially reuse source. Licensing is a maintainer decision; do not infer it from this README.
 
 **Source-reviewed against:** CAPT-Bot `main` `0136336538f2f1c2a1daadb55303ee54c60531ac` (2026-10-19). Local live execution was unavailable during this documentation pass; see the [documentation audit receipt](docs/audit/OMEGA_2026-10-19.md).

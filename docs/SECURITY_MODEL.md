@@ -22,7 +22,7 @@
 
 ## Review caveats
 
-Static code shows local Host/Origin filtering and bounded JSON parsing, but **no independent adversarial HTTP or dependency audit was executed in this pass**. Error-return paths in `ui_server.py` serialize exception messages to the local client; before any broader deployment, review for sensitive detail exposure and sanitize errors where appropriate. Also assess all Core permission/entitlement versions and Docker/cloud subprocess boundaries in an integration environment.
+Static code shows local Host/Origin filtering and bounded JSON parsing. In the 2026-10-19 follow-up, unexpected GET/POST handler exceptions were changed to return the fixed `{"error":"internal_error"}` envelope instead of raw exception text, with a focused regression test of both routes. HTTP 400 validation errors still expose their explicit validation messages, so their bounded/sanitized content deserves a separate review. **No full penetration test, dependency audit or R5 live deployment verification was executed.** Also assess Core permission/entitlement versions and Docker/cloud subprocess boundaries in an integration environment.
 
 The repository lacked a root `LICENSE` and published `SECURITY.md` in the audited tree. Neither legal licensing terms nor a vulnerability-reporting address may be invented by this document. Until the maintainer publishes a disclosure procedure, report suspected security issues privately to the owner through an already-established trusted channel rather than posting exploit details in a public issue.
 
